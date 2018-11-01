@@ -8,10 +8,8 @@ using UnityEngine;
 
 
 public class NetworkController : MonoBehaviour {
-    #region private members     
     private TcpClient socket;
     private Thread consumerThread;
-    #endregion
 
     void Start()
     {
@@ -22,9 +20,17 @@ public class NetworkController : MonoBehaviour {
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
+            Debug.Log("yo2: ");
             SendMessage();
         }
     }
+
+    void OnApplicationQuit()
+    {
+        socket.Close();
+    }
+
+
     /// <summary>   
     /// Setup socket connection.    
     /// </summary>  
@@ -36,35 +42,28 @@ public class NetworkController : MonoBehaviour {
     }
 
     /// <summary>   
-    /// Runs in background clientReceiveThread; Listens for incomming data.     
+    /// Runs in background consumerThread; Listens for incomming data.     
     /// </summary>     
     private void ListenForData()
     {
-        try
+        socket = new TcpClient("localhost", 16016);
+        Byte[] bytes = new Byte[1024];
+        while (true)
         {
-            socket = new TcpClient("localhost", 16016);
-            Byte[] bytes = new Byte[1024];
-            while (true)
+            // Get a stream object for reading              
+            using (NetworkStream stream = socket.GetStream())
             {
-                // Get a stream object for reading              
-                using (NetworkStream stream = socket.GetStream())
+                int length;
+                // Read incomming stream into byte arrary.                  
+                while ((length = stream.Read(bytes, 0, bytes.Length)) != 0)
                 {
-                    int length;
-                    // Read incomming stream into byte arrary.                  
-                    while ((length = stream.Read(bytes, 0, bytes.Length)) != 0)
-                    {
-                        var incommingData = new byte[length];
-                        Array.Copy(bytes, 0, incommingData, 0, length);
-                        // Convert byte array to string message.                        
-                        string serverMessage = Encoding.ASCII.GetString(incommingData);
-                        Debug.Log("server message received as: " + serverMessage);
-                    }
+                    var incommingData = new byte[length];
+                    Array.Copy(bytes, 0, incommingData, 0, length);
+                    // Convert byte array to string message.                        
+                    string serverMessage = Encoding.ASCII.GetString(incommingData);
+                    Debug.Log("server message received as: " + serverMessage);
                 }
             }
-        }
-        catch (SocketException socketException)
-        {
-            Debug.Log("Socket exception: " + socketException);
         }
     }
 
@@ -82,7 +81,7 @@ public class NetworkController : MonoBehaviour {
             throw new Exception("No write stream");
         }
 
-        string clientMessage = "This is a message from one of your clients.";
+        string clientMessage = "w\n";
         // Convert string message to byte array.                 
         byte[] clientMessageAsByteArray = Encoding.ASCII.GetBytes(clientMessage);
         // Write byte array to socketConnection stream.                 
