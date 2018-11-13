@@ -10,6 +10,9 @@ using UnityEngine;
 struct AlloClient
 {
     [DllImport("liballonet")]
+    public unsafe static extern bool allo_initialize(bool redirect_stdout);
+
+    [DllImport("liballonet")]
     public unsafe static extern AlloClient *allo_connect();
 
     public IntPtr set_intent;
@@ -83,8 +86,14 @@ public class NetworkController : MonoBehaviour
 
     void Start()
     {
-        AlloIntent intent = new AlloIntent();
-        intent.zmovement = 1;
+        if(!AlloClient.allo_initialize(true)) {
+            throw new Exception("Unable to initialize AlloNet");
+        }
+
+        AlloIntent intent = new AlloIntent
+        {
+            zmovement = 1
+        };
 
         unsafe
         {
@@ -96,6 +105,11 @@ public class NetworkController : MonoBehaviour
 
     void Update()
     {
+        unsafe
+        {
+            AlloClient.PollFun poll = (AlloClient.PollFun)Marshal.GetDelegateForFunctionPointer(client->poll, typeof(AlloClient.PollFun));
+            poll(client);
+        }
         if (Input.GetKeyDown(KeyCode.Space))
         {
 
