@@ -28,7 +28,7 @@ public class NetworkController : MonoBehaviour
         {
             AlloIntent intent = new AlloIntent();
             intent.zmovement = Input.GetKey(KeyCode.W) ? 2 : Input.GetKey(KeyCode.S) ? -2 : 0;
-            intent.xmovement = Input.GetKey(KeyCode.A) ? 2 : Input.GetKey(KeyCode.D) ? -2 : 0;
+            intent.xmovement = Input.GetKey(KeyCode.D) ? 2 : Input.GetKey(KeyCode.A) ? -2 : 0;
             // actually, SetIntent shouldn't send it; Poll should
             client.SetIntent(intent);
         }

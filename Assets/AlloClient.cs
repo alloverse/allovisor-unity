@@ -82,37 +82,6 @@ class AlloClient
     }
 }
 
-[StructLayout(LayoutKind.Sequential)]
-struct _AlloState
-{
-    public Int64 revision;
-    public unsafe _AlloEntity* entityHead;
-};
-
-[StructLayout(LayoutKind.Sequential)]
-struct AlloIntent
-{
-    public double zmovement;
-    public double xmovement;
-    public double yaw;
-    public double pitch;
-};
-
-[StructLayout(LayoutKind.Sequential)]
-struct AlloVector
-{
-    public double x, y, z;
-};
-
-[StructLayout(LayoutKind.Sequential)]
-struct _AlloEntity
-{
-    public IntPtr id; // to string
-    public AlloVector position;
-    public AlloVector rotation;
-    public unsafe _AlloEntity* le_next;
-};
-
 class AlloEntity
 {
     public string id;
@@ -127,7 +96,36 @@ class AlloEntity
 
 
 
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+struct _AlloState
+{
+    public Int64 revision;
+    public unsafe _AlloEntity* entityHead;
+};
 
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+struct AlloIntent
+{
+    public double zmovement;
+    public double xmovement;
+    public double yaw;
+    public double pitch;
+};
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+struct AlloVector
+{
+    public double x, y, z;
+};
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+struct _AlloEntity
+{
+    public IntPtr id; // to string
+    public AlloVector position;
+    public AlloVector rotation;
+    public unsafe _AlloEntity* le_next;
+};
 
 [StructLayout(LayoutKind.Sequential)]
 struct _AlloClient
