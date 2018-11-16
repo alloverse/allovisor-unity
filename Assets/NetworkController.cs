@@ -10,7 +10,9 @@ public class NetworkController : MonoBehaviour
     AlloClient client;
     int frameCount;
     public GameObject baseEntityGO;
+    public GameObject mainCamera;
     Dictionary<string, GameObject> entityGOs = new Dictionary<string, GameObject>();
+    string myAvatarEntityId;
 
     void Start()
     {
@@ -20,6 +22,7 @@ public class NetworkController : MonoBehaviour
         client = new AlloClient();
         client.added = EntityAdded;
         client.removed = EntityRemoved;
+        client.interaction = Interaction;
     }
 
     void Update()
@@ -42,6 +45,8 @@ public class NetworkController : MonoBehaviour
             q.eulerAngles = entity.rotation;
             go.transform.rotation = q;
         }
+
+        UpdateAvatar();
     }
 
     void EntityAdded(AlloEntity entity)
@@ -55,6 +60,23 @@ public class NetworkController : MonoBehaviour
         GameObject obj = entityGOs[entity.id];
         Destroy(obj);
         entityGOs.Remove(entity.id);
+    }
+
+    void Interaction(AlloEntity from, AlloEntity to, LitJson.JsonData cmd)
+    {
+        if(cmd.Count == 2 && cmd[0].ToString() == "your_avatar") {
+            myAvatarEntityId = cmd[1].ToString();
+        }
+    }
+
+    void UpdateAvatar()
+    {
+        GameObject avatarEntity = null;
+        Vector3 offset = new Vector3(0, 1, 0);
+        if(myAvatarEntityId != null && entityGOs.TryGetValue(myAvatarEntityId, out avatarEntity)) {
+            mainCamera.transform.position = avatarEntity.transform.position + offset;
+            mainCamera.transform.rotation = avatarEntity.transform.rotation;
+        }
     }
 
     void OnApplicationQuit()

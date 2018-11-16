@@ -10,15 +10,18 @@ class AlloClient
     private unsafe _AlloClient* client;
     public Dictionary<string, AlloEntity> entities = new Dictionary<string, AlloEntity>();
     public delegate void EntityAdded(AlloEntity entity);
-    public EntityAdded added;
+    public EntityAdded added = null;
     public delegate void EntityRemoved(AlloEntity entity);
-    public EntityRemoved removed;
+    public EntityRemoved removed = null;
+    public delegate void Interaction(AlloEntity from, AlloEntity to, LitJson.JsonData command);
+    public Interaction interaction = null;
 
     public AlloClient()
     {
         unsafe
         {
             client = _AlloClient.allo_connect();
+            client->interaction_callback = Marshal.GetFunctionPointerForDelegate(new _AlloClient.InteractionCallbackFun(this._interaction));
         }
     }
     public void SetIntent(AlloIntent intent)
@@ -44,11 +47,13 @@ class AlloClient
             HashSet<string> incomingEntityIds = new HashSet<string>();
 
             _AlloEntity* entry = client->state.entityHead;
-            while(entry != null) {
+            while(entry != null)
+            {
                 string entityId = Marshal.PtrToStringAnsi(entry->id);
                 AlloEntity entity;
                 bool exists = entities.TryGetValue(entityId, out entity);
-                if (!exists) {
+                if (!exists)
+                {
                     entity = new AlloEntity();
                     entity.id = entityId;
                     entities[entityId] = entity;
@@ -64,11 +69,19 @@ class AlloClient
             lostEntityIds = new HashSet<string>(existingEntityIds);
             lostEntityIds.ExceptWith(incomingEntityIds);
         }
-        foreach(string addedId in newEntityIds) {
-            added(entities[addedId]);
+        if(added != null)
+        {
+            foreach (string addedId in newEntityIds)
+            {
+                added(entities[addedId]);
+            }
         }
-        foreach(string removedId in lostEntityIds) {
-            removed(entities[removedId]);
+        foreach(string removedId in lostEntityIds)
+        {
+            if(removed != null)
+            {
+                removed(entities[removedId]);
+            }
             entities.Remove(removedId);
         }
     }
@@ -78,6 +91,20 @@ class AlloClient
         {
             _AlloClient.DisconnectFun disconnect = (_AlloClient.DisconnectFun)Marshal.GetDelegateForFunctionPointer(client->disconnect, typeof(_AlloClient.DisconnectFun));
             disconnect(client, reason);
+        }
+    }
+
+    unsafe private void _interaction(_AlloClient *_client, IntPtr _from, IntPtr _to, IntPtr _cmd)
+    {
+        string from = Marshal.PtrToStringAnsi(_from);
+        string to = Marshal.PtrToStringAnsi(_to);
+        string cmd = Marshal.PtrToStringAnsi(_cmd);
+        LitJson.JsonData data = LitJson.JsonMapper.ToObject(cmd);
+        AlloEntity fromEntity = from == null ? null : entities.ContainsKey(from) ? entities[from] : null;
+        AlloEntity toEntity = to == null ? null : entities.ContainsKey(to) ? entities[to] : null;
+        if (interaction != null)
+        {
+            interaction(fromEntity, toEntity, data);
         }
     }
 }
@@ -164,5 +191,5 @@ struct _AlloClient
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public unsafe delegate void StateCallbackFun(_AlloClient* client, ref _AlloState state);
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public unsafe delegate void InteractionCallbackFun(_AlloClient* client, string senderEntityId, string receiverEntityId, string cmd);
+    public unsafe delegate void InteractionCallbackFun(_AlloClient* client, IntPtr senderEntityId, IntPtr receiverEntityId, IntPtr cmd);
 };
