@@ -16,12 +16,14 @@ class AlloClient
     public delegate void Interaction(AlloEntity from, AlloEntity to, LitJson.JsonData command);
     public Interaction interaction = null;
 
-    public AlloClient()
+    public AlloClient(string url)
     {
         unsafe
         {
-            client = _AlloClient.allo_connect();
+            IntPtr urlPtr = Marshal.StringToHGlobalAnsi(MenuParameters.urlToOpen);
+            client = _AlloClient.allo_connect(urlPtr);
             client->interaction_callback = Marshal.GetFunctionPointerForDelegate(new _AlloClient.InteractionCallbackFun(this._interaction));
+            Marshal.FreeHGlobal(urlPtr);
         }
     }
     public void SetIntent(AlloIntent intent)
@@ -161,7 +163,7 @@ struct _AlloClient
     public unsafe static extern bool allo_initialize(bool redirect_stdout);
 
     [DllImport("liballonet")]
-    public unsafe static extern _AlloClient* allo_connect();
+    public unsafe static extern _AlloClient* allo_connect(IntPtr urlString);
 
     public IntPtr set_intent;
     public IntPtr interact;

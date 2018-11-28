@@ -19,7 +19,7 @@ public class NetworkController : MonoBehaviour
         if(!_AlloClient.allo_initialize(true)) {
             throw new Exception("Unable to initialize AlloNet");
         }
-        client = new AlloClient();
+        client = new AlloClient(MenuParameters.urlToOpen);
         client.added = EntityAdded;
         client.removed = EntityRemoved;
         client.interaction = Interaction;
