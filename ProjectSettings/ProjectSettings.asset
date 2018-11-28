@@ -151,7 +151,8 @@ PlayerSettings:
   resolutionScalingMode: 0
   androidSupportedAspectRatio: 1
   androidMaxAspectRatio: 2.1
-  applicationIdentifier: {}
+  applicationIdentifier:
+    Standalone: com.alloverse.allovisor
   buildNumber: {}
   AndroidBundleVersionCode: 1
   AndroidMinSdkVersion: 16
@@ -570,7 +571,9 @@ PlayerSettings:
   webGLUseEmbeddedResources: 0
   webGLCompressionFormat: 1
   webGLLinkerTarget: 1
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    1: 
+    4: 
   platformArchitecture: {}
   scriptingBackend: {}
   il2cppCompilerConfiguration: {}
