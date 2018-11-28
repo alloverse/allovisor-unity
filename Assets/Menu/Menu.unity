@@ -544,6 +544,8 @@ MonoBehaviour:
   panel: {fileID: 26545043}
   buttonPrefab: {fileID: 1580857072442772, guid: 08c0b0c2ccb2d439ea2af420c98b21eb,
     type: 2}
+  errorPrefab: {fileID: 1482890207315134, guid: dc5c826892dbf466e9c80e109989b2c9,
+    type: 2}
 --- !u!4 &1701774113
 Transform:
   m_ObjectHideFlags: 0

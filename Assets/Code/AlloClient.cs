@@ -22,8 +22,12 @@ class AlloClient
         {
             IntPtr urlPtr = Marshal.StringToHGlobalAnsi(MenuParameters.urlToOpen);
             client = _AlloClient.allo_connect(urlPtr);
+            if (client == null)
+            {
+                Marshal.FreeHGlobal(urlPtr);
+                throw new Exception("Failed to connect to " + url);
+            }
             client->interaction_callback = Marshal.GetFunctionPointerForDelegate(new _AlloClient.InteractionCallbackFun(this._interaction));
-            Marshal.FreeHGlobal(urlPtr);
         }
     }
     public void SetIntent(AlloIntent intent)

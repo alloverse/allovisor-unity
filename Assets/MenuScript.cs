@@ -8,13 +8,22 @@ using UnityEngine.UI;
 public class MenuParameters
 {
     public static string urlToOpen;
+    public static string lastError;
 }
 
 public class MenuScript : MonoBehaviour {
     public GameObject panel;
     public GameObject buttonPrefab;
+    public GameObject errorPrefab;
 
 	void Start () {
+        if(MenuParameters.lastError != null) {
+            GameObject text = (GameObject)Instantiate(errorPrefab);
+            text.transform.SetParent(panel.transform);
+            text.GetComponent<Text>().text = MenuParameters.lastError;
+            MenuParameters.lastError = null;
+        }
+
         // todo: load previously opened alloplace URLs from history
         for (int i = 0; i < 1; i++)
         {

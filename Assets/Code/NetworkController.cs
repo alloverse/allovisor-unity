@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class NetworkController : MonoBehaviour
 {
@@ -19,7 +20,14 @@ public class NetworkController : MonoBehaviour
         if(!_AlloClient.allo_initialize(true)) {
             throw new Exception("Unable to initialize AlloNet");
         }
-        client = new AlloClient(MenuParameters.urlToOpen);
+        try
+        {
+            client = new AlloClient(MenuParameters.urlToOpen);
+        } catch(Exception e) {
+            MenuParameters.lastError = e.Message;
+            SceneManager.LoadScene("Menu/Menu");
+            return;
+        }
         client.added = EntityAdded;
         client.removed = EntityRemoved;
         client.interaction = Interaction;
@@ -86,5 +94,6 @@ public class NetworkController : MonoBehaviour
         client.Disconnect(0);
     }
 
+    // todo: on disconnection, go to menu scene
 
 }
