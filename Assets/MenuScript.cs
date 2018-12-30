@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -17,6 +19,8 @@ public class MenuScript : MonoBehaviour {
     public GameObject errorPrefab;
 
 	void Start () {
+        SetUrlCallback(Marshal.GetFunctionPointerForDelegate(new UrlCallback(this.UrlHandler)));
+
         if(MenuParameters.lastError != null) {
             GameObject text = (GameObject)Instantiate(errorPrefab);
             text.transform.SetParent(panel.transform);
@@ -40,10 +44,22 @@ public class MenuScript : MonoBehaviour {
 		
 	}
 
-    public void ConnectTo() {
-        string url = EventSystem.current.currentSelectedGameObject.name;
+    private void UrlHandler(string url) {
+        ConnectToUrl(url);
+    }
+    private void ConnectToUrl(string url) {
         MenuParameters.urlToOpen = url;
         print("Opening url " + url);
         SceneManager.LoadScene("Scenes/NetworkScene");
     }
+    public void ConnectTo() {
+        string url = EventSystem.current.currentSelectedGameObject.name;
+        ConnectToUrl(url);
+    }
+
+    [DllImport("AllovisorNativeExtensions")]
+    public unsafe static extern void SetUrlCallback(IntPtr UrlCallback);
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    public unsafe delegate void UrlCallback(string url);
 }
