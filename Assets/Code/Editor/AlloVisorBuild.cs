@@ -28,24 +28,7 @@ public class BuildPlayerExample : MonoBehaviour
         PlistDocument info = new PlistDocument();
         string infoPath = "Build/Mac/Alloverse Visor.app/Contents/Info.plist";
         info.ReadFromFile(infoPath);
-
-        var urlTypes = info.root.CreateArray("CFBundleURLTypes");
-        var placeType = urlTypes.AddDict();
-        placeType.SetString("CFBundleURLName", "alloverse-place");
-        var placeTypeSchemes = placeType.CreateArray("CFBundleURLSchemes");
-        placeTypeSchemes.AddString("alloverse-place");
-        placeTypeSchemes.AddString("alloplace");
-
-        var applianceType = urlTypes.AddDict();
-        applianceType.SetString("CFBundleURLName", "alloverse-appliance");
-        var applianceTypeSchemes = applianceType.CreateArray("CFBundleURLSchemes");
-        applianceTypeSchemes.AddString("alloverse-appliance+http");
-        applianceTypeSchemes.AddString("alloverse-appliance+https");
-        applianceTypeSchemes.AddString("alloappliance+http");
-        applianceTypeSchemes.AddString("alloappliance+https");
-        applianceTypeSchemes.AddString("alloapp+http");
-        applianceTypeSchemes.AddString("alloapp+https");
-
+        AddUrlTypesToInfo(info);
         info.WriteToFile(infoPath);
 
         if (summary.result == BuildResult.Succeeded)
@@ -67,6 +50,26 @@ public class BuildPlayerExample : MonoBehaviour
         proc.StartInfo.FileName = "Build/Mac/Alloverse Visor.app/Contents/MacOS/allovisor";
         proc.Start();
 
+    }
+
+    private static void AddUrlTypesToInfo(PlistDocument info)
+    {
+        var urlTypes = info.root.CreateArray("CFBundleURLTypes");
+        var placeType = urlTypes.AddDict();
+        placeType.SetString("CFBundleURLName", "alloverse-place");
+        var placeTypeSchemes = placeType.CreateArray("CFBundleURLSchemes");
+        placeTypeSchemes.AddString("alloverse-place");
+        placeTypeSchemes.AddString("alloplace");
+
+        var applianceType = urlTypes.AddDict();
+        applianceType.SetString("CFBundleURLName", "alloverse-appliance");
+        var applianceTypeSchemes = applianceType.CreateArray("CFBundleURLSchemes");
+        applianceTypeSchemes.AddString("alloverse-appliance+http");
+        applianceTypeSchemes.AddString("alloverse-appliance+https");
+        applianceTypeSchemes.AddString("alloappliance+http");
+        applianceTypeSchemes.AddString("alloappliance+https");
+        applianceTypeSchemes.AddString("alloapp+http");
+        applianceTypeSchemes.AddString("alloapp+https");
     }
 
 }
