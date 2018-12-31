@@ -26,8 +26,12 @@ public struct PlaceDescriptor
 
 public class VisorSettings
 {
-    public PlaceDescriptor[] previousPlaces;
-    public PlaceDescriptor[] PreviousPlaces {
+    public VisorSettings()
+    {
+        previousPlaces = new List<PlaceDescriptor>();
+    }
+    private List<PlaceDescriptor> previousPlaces;
+    public List<PlaceDescriptor> PreviousPlaces {
         get {
             return previousPlaces;
         }
@@ -37,23 +41,35 @@ public class VisorSettings
         }
     }
     public void addPlace(PlaceDescriptor place) {
-        List<PlaceDescriptor> places = new List<PlaceDescriptor>(this.PreviousPlaces);
+        List<PlaceDescriptor> places = this.PreviousPlaces;
+        places.Remove(place);
         if(places.Count > 10) {
             places.RemoveAt(9);
         }
         places.Insert(0, place);
-        this.PreviousPlaces = places.ToArray();
+        this.PreviousPlaces = places;
     }
 
-    public static VisorSettings GlobalSettings;
+    private static VisorSettings globalSettings;
+    public static VisorSettings GlobalSettings() {
+        return globalSettings;
+    }
+    public static void LoadGlobal() {
+        globalSettings = VisorSettings.Load();
+    }
     public static VisorSettings Load() {
         string prefs = PlayerPrefs.GetString("VisorSettings");
         if (prefs != null)
         {
-            return LitJson.JsonMapper.ToObject<VisorSettings>(prefs);
-        } else {
-            return new VisorSettings();
+            VisorSettings loaded = LitJson.JsonMapper.ToObject<VisorSettings>(prefs);
+            if(loaded != null) {
+                return loaded;
+            }
         }
+
+        VisorSettings settings = new VisorSettings();
+        settings.addPlace(new PlaceDescriptor("alloplace://localhost:21337", "Local"));
+        return settings;
     }
     public void Save() {
         PlayerPrefs.SetString("VisorSettings", LitJson.JsonMapper.ToJson(this));
@@ -67,7 +83,7 @@ public class MenuScript : MonoBehaviour {
 
 	void Start () {
         SetUrlCallback(Marshal.GetFunctionPointerForDelegate(new UrlCallback(this.UrlHandler)));
-        VisorSettings.GlobalSettings = VisorSettings.Load();
+        VisorSettings.LoadGlobal();
 
         if (MenuParameters.lastError != null) {
             GameObject text = (GameObject)Instantiate(errorPrefab);
@@ -76,7 +92,7 @@ public class MenuScript : MonoBehaviour {
             MenuParameters.lastError = null;
         }
 
-        foreach(PlaceDescriptor place in VisorSettings.GlobalSettings.PreviousPlaces)
+        foreach(PlaceDescriptor place in VisorSettings.GlobalSettings().PreviousPlaces)
         {
             GameObject button = (GameObject)Instantiate(buttonPrefab);
             button.transform.SetParent(panel.transform);
@@ -103,7 +119,7 @@ public class MenuScript : MonoBehaviour {
         MenuParameters.urlToOpen = url;
         print("Opening url " + url);
         SceneManager.LoadScene("Scenes/NetworkScene");
-        VisorSettings.GlobalSettings.addPlace(new PlaceDescriptor(url, null));
+        VisorSettings.GlobalSettings().addPlace(new PlaceDescriptor(url, null));
     }
 
     [DllImport("AllovisorNativeExtensions")]
