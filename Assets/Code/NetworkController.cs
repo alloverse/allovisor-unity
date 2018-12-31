@@ -35,6 +35,10 @@ public class NetworkController : MonoBehaviour
 
     void Update()
     {
+        if(client == null) {
+            return;
+        }
+
         if (frameCount++ % 3 == 0) // only send @ 20hz
         {
             AlloIntent intent = new AlloIntent();
