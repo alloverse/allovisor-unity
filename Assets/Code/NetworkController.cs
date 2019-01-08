@@ -54,9 +54,9 @@ public class NetworkController : MonoBehaviour
         foreach(AlloEntity entity in client.entities.Values)
         {
             GameObject go = entityGOs[entity.id];
-            go.transform.position = entity.position;
+            go.transform.position = entity.Transform.position;
             Quaternion q = new Quaternion();
-            q.eulerAngles = entity.rotation;
+            q.eulerAngles = entity.Transform.rotation;
             go.transform.rotation = q;
         }
 

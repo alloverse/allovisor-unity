@@ -66,9 +66,9 @@ class AlloClient
                     newEntityIds.Add(entityId);
                 }
                 incomingEntityIds.Add(entityId);
-                entity.position = new Vector3((float)entry->position.x, (float)entry->position.y, (float)entry->position.z);
-                entity.rotation = new Vector3((float)entry->rotation.x, (float)entry->rotation.y, (float)entry->rotation.z);
+                string componentsJson = _AlloClient.cJSON_Print(entry->components);
 
+                entity.components = LitJson.JsonMapper.ToObject(componentsJson);
                 entry = entry->le_next;
             }
             HashSet<String> existingEntityIds = new HashSet<string>(entities.Keys);
@@ -118,9 +118,45 @@ class AlloClient
 class AlloEntity
 {
     public string id;
-    public Vector3 position;
-    public Vector3 rotation;
+    public LitJson.JsonData components;
+    public AlloComponent.Transform Transform {
+        get {
+            if(!components.ContainsKey("transform")) {
+                return null;
+            }
+            LitJson.JsonData transformRep = components["transform"];
+            AlloComponent.Transform transform = new AlloComponent.Transform();
+            LitJson.JsonData posRep = transformRep["position"];
+            LitJson.JsonData rotRep = transformRep["rotation"];
+            transform.position = new Vector3(JsonFlt(posRep[0]), JsonFlt(posRep[1]), JsonFlt(posRep[2]));
+            transform.rotation = new Vector3(JsonFlt(rotRep[0]), JsonFlt(rotRep[1]), JsonFlt(rotRep[2]));
+            return transform;
+        }
+    }
+
+    public static float JsonFlt(LitJson.JsonData data)
+    {
+        if (data.IsInt)
+        {
+            return (float)(int)data;
+        }
+        else if (data.IsDouble)
+        {
+            return (float)(double)data;
+        }
+        return 0;
+    }
 };
+
+namespace AlloComponent {
+    class Transform {
+        public Vector3 position;
+        public Vector3 rotation;
+    }
+
+
+
+}
 
 
 
@@ -155,8 +191,7 @@ struct AlloVector
 struct _AlloEntity
 {
     public IntPtr id; // to string
-    public AlloVector position;
-    public AlloVector rotation;
+    public IntPtr components; // cJSON*
     public unsafe _AlloEntity* le_next;
 };
 
@@ -168,6 +203,9 @@ struct _AlloClient
 
     [DllImport("liballonet")]
     public unsafe static extern _AlloClient* allo_connect(IntPtr urlString);
+
+    [DllImport("liballonet")]
+    public unsafe static extern string cJSON_Print(IntPtr cjson);
 
     public IntPtr set_intent;
     public IntPtr interact;
@@ -198,4 +236,6 @@ struct _AlloClient
     public unsafe delegate void StateCallbackFun(_AlloClient* client, ref _AlloState state);
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public unsafe delegate void InteractionCallbackFun(_AlloClient* client, IntPtr senderEntityId, IntPtr receiverEntityId, IntPtr cmd);
+
+
 };
