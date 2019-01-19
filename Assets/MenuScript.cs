@@ -59,6 +59,7 @@ public class VisorSettings
     }
     public static VisorSettings Load() {
         string prefs = PlayerPrefs.GetString("VisorSettings");
+
         if (prefs != null)
         {
             VisorSettings loaded = LitJson.JsonMapper.ToObject<VisorSettings>(prefs);
@@ -69,6 +70,7 @@ public class VisorSettings
 
         VisorSettings settings = new VisorSettings();
         settings.addPlace(new PlaceDescriptor("alloplace://localhost:21337", "Local"));
+        settings.addPlace(new PlaceDescriptor("alloplace://nevyn.places.alloverse.com", "Nevyn's place"));
         return settings;
     }
     public void Save() {
