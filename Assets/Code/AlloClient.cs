@@ -173,7 +173,7 @@ struct _AlloState
 };
 
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
-struct AlloIntent
+public struct AlloIntent
 {
     public double zmovement;
     public double xmovement;
