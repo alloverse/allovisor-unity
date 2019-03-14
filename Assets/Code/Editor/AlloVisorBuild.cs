@@ -12,14 +12,14 @@ public class BuildPlayerExample : MonoBehaviour
     }
 
     // inspo: https://gist.github.com/sanukin39/997d8364d16c5c27dae75a3bc1f1f045
-    [MenuItem("Build/Build for MacOS")]
+    [MenuItem("Build/[Mac] Build")]
     public static void MacBuild()
     {
         BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
-        buildPlayerOptions.scenes = new[] { "Assets/Menu/Menu.unity", "Assets/Scenes/NetworkScene.unity" };
+        buildPlayerOptions.scenes = Scenes();
         buildPlayerOptions.locationPathName = "Build/Mac/Alloverse Visor";
         buildPlayerOptions.target = BuildTarget.StandaloneOSX;
-        buildPlayerOptions.options = BuildOptions.None;
+        buildPlayerOptions.options = BuildOptions.ShowBuiltPlayer;
 
         BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
         BuildSummary summary = report.summary;
@@ -42,7 +42,7 @@ public class BuildPlayerExample : MonoBehaviour
         }
     }
 
-    [MenuItem("Build/Build and Run")]
+    [MenuItem("Build/[Mac] Build and Run")]
     public static void BuildAndRun()
     {
         MacBuild();
@@ -70,6 +70,37 @@ public class BuildPlayerExample : MonoBehaviour
         applianceTypeSchemes.AddString("alloappliance+https");
         applianceTypeSchemes.AddString("alloapp+http");
         applianceTypeSchemes.AddString("alloapp+https");
+    }
+
+    private static string[] Scenes()
+    {
+        return new[] { "Assets/Menu/Menu.unity", "Assets/Scenes/NetworkScene.unity" };
+    }
+
+    [MenuItem("Build/[Android] Build and Install")]
+    public static void AndroidBuild()
+    {
+        BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
+        buildPlayerOptions.scenes = Scenes();
+        buildPlayerOptions.locationPathName = "Build/Android/AlloverseVisor.apk";
+        buildPlayerOptions.target = BuildTarget.Android;
+        buildPlayerOptions.options = BuildOptions.AutoRunPlayer;
+
+        BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
+        BuildSummary summary = report.summary;
+
+        // Add URL schemes
+        // TODO!!
+
+        if (summary.result == BuildResult.Succeeded)
+        {
+            Debug.Log("Build succeeded: " + summary.totalSize + " bytes");
+        }
+
+        if (summary.result == BuildResult.Failed)
+        {
+            Debug.Log("Build failed");
+        }
     }
 
 }
