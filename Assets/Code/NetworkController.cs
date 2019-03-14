@@ -52,7 +52,9 @@ public class NetworkController : MonoBehaviour
             GameObject go = entityGOs[entity.id];
             go.transform.position = entity.Transform.position;
             Quaternion q = new Quaternion();
-            q.eulerAngles = entity.Transform.rotation;
+            Vector3 radRotation = entity.Transform.rotation;
+            Vector3 degRotation = radRotation * 180/Mathf.PI;
+            q.eulerAngles = degRotation;
             go.transform.rotation = q;
         }
 
