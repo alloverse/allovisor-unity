@@ -22,7 +22,7 @@ public class InputController : MonoBehaviour {
             if(lastMouse != Vector3.zero)
             {
                 Vector3 delta = lastMouse - Input.mousePosition;
-                pitch -= delta.y * 0.01f;
+                pitch += delta.y * 0.01f;
                 yaw -= delta.x * 0.01f;
             }
             lastMouse = Input.mousePosition;
