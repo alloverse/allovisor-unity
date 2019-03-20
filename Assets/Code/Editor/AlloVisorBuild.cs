@@ -8,10 +8,25 @@ using System.IO;
 
 public class AllovisorBuilder : MonoBehaviour
 {
+    static bool handlerInstalled = false;
+    static void WorkaroundBrokenCertificateHandling()
+    {
+        if(handlerInstalled)
+        {
+            return;
+        }
+        handlerInstalled = true;
+        Debug.Log("Ignoring certificates because Windows");
+        // uhmmmmmm Unity's .Net runtime is out of date and doesn't understand SHA256 on Windows. ffs.
+        ServicePointManager.ServerCertificateValidationCallback += delegate (object sender, System.Security.Cryptography.X509Certificates.X509Certificate cert, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors) {
+            return true;
+        };
+    }
+
     [MenuItem("Build/Download allonet assets")]
     public static void DownloadAllonet()
     {
-
+        WorkaroundBrokenCertificateHandling();
         string currentVersion = File.Exists("Assets/allonet/allonet.cache") ?
             File.ReadAllText("Assets/allonet/allonet.cache") : 
             "-1";
@@ -21,12 +36,6 @@ public class AllovisorBuilder : MonoBehaviour
             Debug.Log("Allonet is up to date");
             return;
         }
-
-        // uhmmmmmm Unity's .Net runtime is out of date and doesn't understand SHA256 on Windows. ffs.
-        ServicePointManager.ServerCertificateValidationCallback += delegate (object sender, System.Security.Cryptography.X509Certificates.X509Certificate cert, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors) {
-            return true;
-        };
-
 
         using (WebClient wc = new WebClient())
         {
@@ -66,6 +75,7 @@ public class AllovisorBuilder : MonoBehaviour
     [MenuItem("Build/Upgrade allonet")]
     public static void UpgradeAllonet()
     {
+        WorkaroundBrokenCertificateHandling();
         using (WebClient wc = new WebClient())
         {
             var jsons = wc.DownloadString("https://dev.azure.com/alloverse/allonet/_apis/build/builds?api-version=5.0");
