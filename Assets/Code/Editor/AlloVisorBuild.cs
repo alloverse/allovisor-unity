@@ -31,7 +31,7 @@ public class AllovisorBuilder : MonoBehaviour
         using (WebClient wc = new WebClient())
         {
             Download(wc, targetVersion, "Allonet-Linux-x64", "Allonet-Linux-x64/build/liballonet.so", "liballonet.so");
-            Download(wc, targetVersion, "Allonet-Windows-x64", "Allonet-Windows-x64/build/Debug/allonet.dll", "allonet.dll");
+            Download(wc, targetVersion, "Allonet-Windows-x64", "Allonet-Windows-x64/build/Debug/allonet.dll", "liballonet.dll");
             Download(wc, targetVersion, "Allonet-Mac-x64", "Allonet-Mac-x64/build/liballonet.dylib", "liballonet.bundle");
         }
         System.IO.File.WriteAllText("Assets/allonet/allonet.cache", targetVersion);
