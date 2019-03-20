@@ -18,7 +18,7 @@ public class NetworkController : MonoBehaviour
 
     void Start()
     {
-        if(!_AlloClient.allo_initialize(true)) {
+        if(!_AlloClient.allo_initialize(false)) {
             throw new Exception("Unable to initialize AlloNet");
         }
         try
