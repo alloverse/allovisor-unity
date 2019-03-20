@@ -21,6 +21,13 @@ public class AllovisorBuilder : MonoBehaviour
             Debug.Log("Allonet is up to date");
             return;
         }
+
+        // uhmmmmmm Unity's .Net runtime is out of date and doesn't understand SHA256 on Windows. ffs.
+        ServicePointManager.ServerCertificateValidationCallback += delegate (object sender, System.Security.Cryptography.X509Certificates.X509Certificate cert, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors) {
+            return true;
+        };
+
+
         using (WebClient wc = new WebClient())
         {
             Download(wc, targetVersion, "Allonet-Linux-x64", "Allonet-Linux-x64/build/liballonet.so", "liballonet.so");
@@ -34,7 +41,8 @@ public class AllovisorBuilder : MonoBehaviour
     private static void Download(WebClient wc, string targetVersion, string artifactName, string path, string destination)
     {
         Debug.Log("Downloading Allonet "+artifactName);
-        var jsons = wc.DownloadString("https://dev.azure.com/alloverse/allonet/_apis/build/builds/" + targetVersion + "/artifacts?artifactName=" + artifactName + "&api-version=5.0");
+        var buildlisturl = "https://dev.azure.com/alloverse/allonet/_apis/build/builds/" + targetVersion + "/artifacts?artifactName=" + artifactName + "&api-version=5.0";
+        var jsons = wc.DownloadString(buildlisturl);
         var json = LitJson.JsonMapper.ToObject(jsons);
         var artifactUrl = json["resource"]["downloadUrl"].ToString();
         wc.DownloadFile(artifactUrl, "out.zip");
@@ -51,6 +59,7 @@ public class AllovisorBuilder : MonoBehaviour
                 outputFile.Flush();
             }
         }
+        zip.Close();
         File.Delete("out.zip");
     }
 

@@ -124,8 +124,13 @@ public class MenuScript : MonoBehaviour {
         VisorSettings.GlobalSettings().addPlace(new PlaceDescriptor(url, null));
     }
 
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
     [DllImport("AllovisorNativeExtensions")]
     public unsafe static extern void SetUrlCallback(IntPtr UrlCallback);
+#else
+    // todo: implement for Android and Windows
+    public static void SetUrlCallback(IntPtr UrlCallback) { }
+#endif
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public unsafe delegate void UrlCallback(string url);
