@@ -39,10 +39,7 @@ sysinfo.txt
 # Downloaded assets
 Assets/allonet/allonet.cache
 Assets/allonet/allonet.cache.meta
-Assets/allonet/allonet.dll
-Assets/allonet/allonet.dll.meta
+Assets/allonet/liballonet.dll
 Assets/allonet/liballonet.bundle
-Assets/allonet/liballonet.bundle.meta
 Assets/allonet/liballonet.so
-Assets/allonet/liballonet.so.meta
 

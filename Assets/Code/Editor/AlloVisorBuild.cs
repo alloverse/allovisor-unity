@@ -8,10 +8,25 @@ using System.IO;
 
 public class AllovisorBuilder : MonoBehaviour
 {
+    static bool handlerInstalled = false;
+    static void WorkaroundBrokenCertificateHandling()
+    {
+        if(handlerInstalled)
+        {
+            return;
+        }
+        handlerInstalled = true;
+        Debug.Log("Ignoring certificates because Windows");
+        // uhmmmmmm Unity's .Net runtime is out of date and doesn't understand SHA256 on Windows. ffs.
+        ServicePointManager.ServerCertificateValidationCallback += delegate (object sender, System.Security.Cryptography.X509Certificates.X509Certificate cert, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors) {
+            return true;
+        };
+    }
+
     [MenuItem("Build/Download allonet assets")]
     public static void DownloadAllonet()
     {
-
+        WorkaroundBrokenCertificateHandling();
         string currentVersion = File.Exists("Assets/allonet/allonet.cache") ?
             File.ReadAllText("Assets/allonet/allonet.cache") : 
             "-1";
@@ -21,10 +36,11 @@ public class AllovisorBuilder : MonoBehaviour
             Debug.Log("Allonet is up to date");
             return;
         }
+
         using (WebClient wc = new WebClient())
         {
             Download(wc, targetVersion, "Allonet-Linux-x64", "Allonet-Linux-x64/build/liballonet.so", "liballonet.so");
-            Download(wc, targetVersion, "Allonet-Windows-x64", "Allonet-Windows-x64/build/Debug/allonet.dll", "allonet.dll");
+            Download(wc, targetVersion, "Allonet-Windows-x64", "Allonet-Windows-x64/build/Debug/allonet.dll", "liballonet.dll");
             Download(wc, targetVersion, "Allonet-Mac-x64", "Allonet-Mac-x64/build/liballonet.dylib", "liballonet.bundle");
         }
         System.IO.File.WriteAllText("Assets/allonet/allonet.cache", targetVersion);
@@ -34,7 +50,8 @@ public class AllovisorBuilder : MonoBehaviour
     private static void Download(WebClient wc, string targetVersion, string artifactName, string path, string destination)
     {
         Debug.Log("Downloading Allonet "+artifactName);
-        var jsons = wc.DownloadString("https://dev.azure.com/alloverse/allonet/_apis/build/builds/" + targetVersion + "/artifacts?artifactName=" + artifactName + "&api-version=5.0");
+        var buildlisturl = "https://dev.azure.com/alloverse/allonet/_apis/build/builds/" + targetVersion + "/artifacts?artifactName=" + artifactName + "&api-version=5.0";
+        var jsons = wc.DownloadString(buildlisturl);
         var json = LitJson.JsonMapper.ToObject(jsons);
         var artifactUrl = json["resource"]["downloadUrl"].ToString();
         wc.DownloadFile(artifactUrl, "out.zip");
@@ -51,12 +68,14 @@ public class AllovisorBuilder : MonoBehaviour
                 outputFile.Flush();
             }
         }
+        zip.Close();
         File.Delete("out.zip");
     }
 
     [MenuItem("Build/Upgrade allonet")]
     public static void UpgradeAllonet()
     {
+        WorkaroundBrokenCertificateHandling();
         using (WebClient wc = new WebClient())
         {
             var jsons = wc.DownloadString("https://dev.azure.com/alloverse/allonet/_apis/build/builds?api-version=5.0");
