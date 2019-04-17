@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEditor.Build.Reporting;
 using UnityEditor.iOS.Xcode;
 using System.Net;
-using GitHub.ICSharpCode.SharpZipLib.Zip;
+using ICSharpCode.SharpZipLib.Zip;
 using System.IO;
 
 public class AllovisorBuilder : MonoBehaviour
