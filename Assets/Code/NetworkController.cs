@@ -21,9 +21,17 @@ public class NetworkController : MonoBehaviour
         if(!_AlloClient.allo_initialize(false)) {
             throw new Exception("Unable to initialize AlloNet");
         }
+
+        AlloIdentity identity = new AlloIdentity();
+        identity.display_name = "Egg";
+        LitJson.JsonData avatarDesc = new LitJson.JsonData();
+        avatarDesc["geometry"] = new LitJson.JsonData();
+        avatarDesc["geometry"]["type"] = new LitJson.JsonData("hardcoded-model");
+        avatarDesc["geometry"]["name"] = new LitJson.JsonData("cubegal");
+
         try
         {
-            client = new AlloClient(MenuParameters.urlToOpen);
+            client = new AlloClient(MenuParameters.urlToOpen, identity, avatarDesc);
         } catch(Exception e) {
             MenuParameters.lastError = e.Message;
             SceneManager.LoadScene("Menu/Menu");

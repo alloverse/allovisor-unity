@@ -4,6 +4,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
+public class AlloIdentity
+{
+    public string display_name { get; set; }
+}
 
 class AlloClient
 {
@@ -16,12 +20,15 @@ class AlloClient
     public delegate void Interaction(AlloEntity from, AlloEntity to, LitJson.JsonData command);
     public Interaction interaction = null;
 
-    public AlloClient(string url)
+    public AlloClient(string url, AlloIdentity identity, LitJson.JsonData avatarDesc)
     {
         unsafe
         {
             IntPtr urlPtr = Marshal.StringToHGlobalAnsi(MenuParameters.urlToOpen);
-            client = _AlloClient.allo_connect(urlPtr);
+            IntPtr identPtr = Marshal.StringToHGlobalAnsi(LitJson.JsonMapper.ToJson(identity));
+            IntPtr avatarPtr = Marshal.StringToHGlobalAnsi(LitJson.JsonMapper.ToJson(avatarDesc));
+
+            client = _AlloClient.allo_connect(urlPtr, identPtr, avatarPtr);
             if (client == null)
             {
                 Marshal.FreeHGlobal(urlPtr);
@@ -202,7 +209,7 @@ struct _AlloClient
     public unsafe static extern bool allo_initialize(bool redirect_stdout);
 
     [DllImport("liballonet")]
-    public unsafe static extern _AlloClient* allo_connect(IntPtr urlString);
+    public unsafe static extern _AlloClient* allo_connect(IntPtr urlString, IntPtr identity, IntPtr avatarDesc);
 
     [DllImport("liballonet")]
     public unsafe static extern string cJSON_Print(IntPtr cjson);
