@@ -17,7 +17,7 @@ class AlloClient
     public EntityAdded added = null;
     public delegate void EntityRemoved(AlloEntity entity);
     public EntityRemoved removed = null;
-    public delegate void Interaction(AlloEntity from, AlloEntity to, LitJson.JsonData command);
+    public delegate void Interaction(string type, AlloEntity from, AlloEntity to, LitJson.JsonData command);
     public Interaction interaction = null;
 
     public AlloClient(string url, AlloIdentity identity, LitJson.JsonData avatarDesc)
@@ -107,17 +107,19 @@ class AlloClient
         }
     }
 
-    unsafe private void _interaction(_AlloClient *_client, IntPtr _from, IntPtr _to, IntPtr _cmd)
+    unsafe private void _interaction(_AlloClient* _client, IntPtr _type, IntPtr _senderEntityId, IntPtr _receiverEntityId, IntPtr _requestId, IntPtr _body)
     {
-        string from = Marshal.PtrToStringAnsi(_from);
-        string to = Marshal.PtrToStringAnsi(_to);
-        string cmd = Marshal.PtrToStringAnsi(_cmd);
+        string type = Marshal.PtrToStringAnsi(_type);
+        string from = Marshal.PtrToStringAnsi(_senderEntityId);
+        string to = Marshal.PtrToStringAnsi(_receiverEntityId);
+        string cmd = Marshal.PtrToStringAnsi(_body);
+        Debug.Log("Incoming " + type + " interaction alloclient: " + from + " > " + to + ": " + cmd + ";");
         LitJson.JsonData data = LitJson.JsonMapper.ToObject(cmd);
         AlloEntity fromEntity = from == null ? null : entities.ContainsKey(from) ? entities[from] : null;
         AlloEntity toEntity = to == null ? null : entities.ContainsKey(to) ? entities[to] : null;
         if (interaction != null)
         {
-            interaction(fromEntity, toEntity, data);
+            interaction(type, fromEntity, toEntity, data);
         }
     }
 }
@@ -242,7 +244,7 @@ struct _AlloClient
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public unsafe delegate void StateCallbackFun(_AlloClient* client, ref _AlloState state);
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public unsafe delegate void InteractionCallbackFun(_AlloClient* client, IntPtr senderEntityId, IntPtr receiverEntityId, IntPtr cmd);
+    public unsafe delegate void InteractionCallbackFun(_AlloClient* client, IntPtr type, IntPtr senderEntityId, IntPtr receiverEntityId, IntPtr requestId, IntPtr body);
 
 
 };

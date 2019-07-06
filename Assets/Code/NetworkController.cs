@@ -71,20 +71,22 @@ public class NetworkController : MonoBehaviour
 
     void EntityAdded(AlloEntity entity)
     {
+        Debug.Log("New entity: " + entity.id);
         GameObject obj = Instantiate(baseEntityGO);
         entityGOs[entity.id] = obj;
     }
 
     void EntityRemoved(AlloEntity entity)
     {
+        Debug.Log("Lost entity: " + entity.id);
         GameObject obj = entityGOs[entity.id];
         Destroy(obj);
         entityGOs.Remove(entity.id);
     }
 
-    void Interaction(AlloEntity from, AlloEntity to, LitJson.JsonData cmd)
+    void Interaction(string type, AlloEntity from, AlloEntity to, LitJson.JsonData cmd)
     {
-        if(cmd.Count == 2 && cmd[0].ToString() == "your_avatar") {
+        if(cmd.Count == 2 && cmd[0].ToString() == "announce") {
             myAvatarEntityId = cmd[1].ToString();
         }
     }
