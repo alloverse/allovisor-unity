@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Linq;
 
 public class NetworkController : MonoBehaviour
 {
@@ -98,7 +99,7 @@ public class NetworkController : MonoBehaviour
     {
         GameObject avatarEntity = null;
         Vector3 offset = new Vector3(0, 1, 0);
-        if(myAvatarEntityId != null && entityGOs.TryGetValue(myAvatarEntityId, out avatarEntity)) {
+        if(myAvatarEntityId != null && (avatarEntity = GOFromEntityId(myAvatarEntityId)) != null) {
             mainCamera.transform.position = avatarEntity.transform.position + offset;
             mainCamera.transform.rotation = avatarEntity.transform.rotation;
         }
@@ -110,5 +111,33 @@ public class NetworkController : MonoBehaviour
     }
 
     // todo: on disconnection, go to menu scene
+
+
+
+
+    public GameObject GOFromEntityId(string id)
+    {
+        GameObject e = null;
+        entityGOs.TryGetValue(myAvatarEntityId, out e);
+        return e;
+    }
+
+    public string EntityIdFromGO(GameObject go)
+    {
+        return entityGOs.FirstOrDefault(x => x.Value == go).Key;
+    }
+
+    public void SendPointing(string pointedAtEntity, Vector3 finger, Vector3 hit)
+    {
+        client.InteractOneway(myAvatarEntityId, pointedAtEntity,
+            "[" +
+                "\"point\", "+
+                String.Format("[{0}, {1}, {2}]", finger.x, finger.y, finger.z)+", "+
+                String.Format("[{0}, {1}, {2}]", hit.x, hit.y, hit.z) + 
+            "]"
+        );
+    }
+
+
 
 }

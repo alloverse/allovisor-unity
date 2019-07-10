@@ -29,9 +29,11 @@ class AlloClient
             IntPtr avatarPtr = Marshal.StringToHGlobalAnsi(LitJson.JsonMapper.ToJson(avatarDesc));
 
             client = _AlloClient.allo_connect(urlPtr, identPtr, avatarPtr);
+            Marshal.FreeHGlobal(urlPtr);
+            Marshal.FreeHGlobal(identPtr);
+            Marshal.FreeHGlobal(avatarPtr);
             if (client == null)
             {
-                Marshal.FreeHGlobal(urlPtr);
                 throw new Exception("Failed to connect to " + url);
             }
             client->interaction_callback = Marshal.GetFunctionPointerForDelegate(new _AlloClient.InteractionCallbackFun(this._interaction));
@@ -46,6 +48,31 @@ class AlloClient
 
         }
     }
+
+    void _Interact(string interactionType, string senderEntityId, string receiverEntityId, string requestId, string body)
+    {
+        unsafe
+        {
+            _AlloClient.InteractFun interact = (_AlloClient.InteractFun)Marshal.GetDelegateForFunctionPointer(client->interact, typeof(_AlloClient.InteractFun));
+
+            IntPtr interactionTypePtr = Marshal.StringToHGlobalAnsi(interactionType);
+            IntPtr senderEntityIdPtr = Marshal.StringToHGlobalAnsi(senderEntityId);
+            IntPtr receiverEntityIdPtr = Marshal.StringToHGlobalAnsi(receiverEntityId);
+            IntPtr requestIdPtr = Marshal.StringToHGlobalAnsi(requestId);
+            IntPtr bodyPtr = Marshal.StringToHGlobalAnsi(body);
+            interact(client, interactionTypePtr, senderEntityIdPtr, receiverEntityIdPtr, requestIdPtr, bodyPtr);
+            Marshal.FreeHGlobal(interactionTypePtr);
+            Marshal.FreeHGlobal(senderEntityIdPtr);
+            Marshal.FreeHGlobal(receiverEntityIdPtr);
+            Marshal.FreeHGlobal(requestIdPtr);
+            Marshal.FreeHGlobal(bodyPtr);
+        }
+    }
+    public void InteractOneway(string senderEntityId, string receiverEntityId, string body)
+    {
+        _Interact("oneway", senderEntityId, receiverEntityId, "", body);
+    }
+
     public void Poll()
     {
         HashSet<string> newEntityIds = new HashSet<string>();
@@ -233,7 +260,7 @@ struct _AlloClient
     public unsafe delegate void SetIntentFun(_AlloClient* client, AlloIntent intent);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public unsafe delegate void InteractFun(_AlloClient* client, string entityId, string cmd);
+    public unsafe delegate void InteractFun(_AlloClient* client, IntPtr interactionType, IntPtr senderEntityId, IntPtr receiverEntityId, IntPtr requestId, IntPtr body);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public unsafe delegate void DisconnectFun(_AlloClient* client, int reason);
