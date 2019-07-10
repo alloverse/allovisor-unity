@@ -135,6 +135,12 @@ public class NetworkController : MonoBehaviour
 
     public void SendPointing(string pointedAtEntity, Vector3 finger, Vector3 hit)
     {
+        // avoid accidentally pointing at myself
+        if (pointedAtEntity == myAvatarEntityId)
+        {
+            return;
+        }
+
         client.InteractOneway(myAvatarEntityId, pointedAtEntity,
             "[" +
                 "\"point\", "+
