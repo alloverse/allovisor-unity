@@ -121,7 +121,6 @@ public class MenuScript : MonoBehaviour {
         MenuParameters.urlToOpen = url;
         print("Opening url " + url);
         SceneManager.LoadScene("Scenes/NetworkScene");
-        VisorSettings.GlobalSettings().addPlace(new PlaceDescriptor(url, null));
     }
 
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX

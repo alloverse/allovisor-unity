@@ -86,8 +86,11 @@ public class NetworkController : MonoBehaviour
 
     void Interaction(string type, AlloEntity from, AlloEntity to, LitJson.JsonData cmd)
     {
-        if(cmd.Count == 2 && cmd[0].ToString() == "announce") {
+        if(cmd.Count >= 3 && cmd[0].ToString() == "announce") {
             myAvatarEntityId = cmd[1].ToString();
+            string placeName = cmd[2].ToString();
+            Debug.Log("Successfully connected to " + placeName);
+            VisorSettings.GlobalSettings().addPlace(new PlaceDescriptor(MenuParameters.urlToOpen, placeName));
         }
     }
 
