@@ -19,7 +19,13 @@ public class NetworkController : MonoBehaviour
 
     void Start()
     {
-        if(!_AlloClient.allo_initialize(false)) {
+        if(MenuParameters.urlToOpen == null)
+        {
+            SceneManager.LoadScene("Scenes/Menu/Menu");
+            return;
+        }
+
+        if (!_AlloClient.allo_initialize(false)) {
             throw new Exception("Unable to initialize AlloNet");
         }
 
