@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class InputController : MonoBehaviour {
     public NetworkController network;
+    public Camera cam;
 
 	// Use this for initialization
 	void Start () {
@@ -14,6 +15,9 @@ public class InputController : MonoBehaviour {
     float yaw, pitch;
 
     void Update () {
+        if (MenuParameters.urlToOpen == null)
+            return;
+
         AlloIntent intent = IntentFromMouse();
         network.intent = intent;
 
@@ -47,7 +51,7 @@ public class InputController : MonoBehaviour {
     void PerformPointingInteraction()
     {
         RaycastHit hit;
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
 
         if (!Physics.Raycast(ray, out hit))
             return;
