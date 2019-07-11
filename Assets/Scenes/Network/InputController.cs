@@ -28,9 +28,11 @@ public class InputController : MonoBehaviour {
         if (Input.GetMouseButtonDown(1) && pointedEntityId != null)
         {
             network.SendPoking(pointedEntityId, true, null);
+            pokedEntityId = pointedEntityId;
         } else if(Input.GetMouseButtonUp(1) && pokedEntityId != null)
         {
             network.SendPoking(pointedEntityId, false, null);
+            pokedEntityId = null;
         }
     }
 
