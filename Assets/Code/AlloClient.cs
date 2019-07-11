@@ -21,7 +21,10 @@ class AlloClient
     public Interaction interaction = null;
 
     public delegate void ResponseCallback(string body);
-    private Dictionary<string, ResponseCallback> responseCallbacks;
+    private Dictionary<string, ResponseCallback> responseCallbacks = new Dictionary<string, ResponseCallback>();
+
+    private _AlloClient.InteractionCallbackFun interactionCallback;
+    private GCHandle interactionCallbackHandle;
 
     public AlloClient(string url, AlloIdentity identity, LitJson.JsonData avatarDesc)
     {
@@ -39,9 +42,18 @@ class AlloClient
             {
                 throw new Exception("Failed to connect to " + url);
             }
-            client->interaction_callback = Marshal.GetFunctionPointerForDelegate(new _AlloClient.InteractionCallbackFun(this._interaction));
+
+            interactionCallback = new _AlloClient.InteractionCallbackFun(this._interaction);
+            interactionCallbackHandle = GCHandle.Alloc(interactionCallback);
+            IntPtr icp = Marshal.GetFunctionPointerForDelegate(interactionCallback);
+            client->interaction_callback = icp;
         }
     }
+    ~AlloClient()
+    {
+        interactionCallbackHandle.Free();
+    }
+
     public void SetIntent(AlloIntent intent)
     {
         unsafe
@@ -153,10 +165,18 @@ class AlloClient
 
         Debug.Log("Incoming " + type + " interaction alloclient: " + from + " > " + to + ": " + cmd + ";");
         LitJson.JsonData data = LitJson.JsonMapper.ToObject(cmd);
-        AlloEntity fromEntity = from == null ? null : entities.ContainsKey(from) ? entities[from] : null;
-        AlloEntity toEntity = to == null ? null : entities.ContainsKey(to) ? entities[to] : null;
+        AlloEntity fromEntity = null;
+        if (!string.IsNullOrEmpty(from))
+            entities.TryGetValue(from, out fromEntity);
+        AlloEntity toEntity = null;
+        if (!string.IsNullOrEmpty(to))
+            entities.TryGetValue(to, out toEntity);
 
-        ResponseCallback callback = (type != "response" || string.IsNullOrEmpty(requestId)) ? null : responseCallbacks[requestId];
+        ResponseCallback callback = null; 
+        if (type == "response" && !string.IsNullOrEmpty(requestId))
+        {
+            responseCallbacks.TryGetValue(requestId, out callback);
+        }
         if (callback != null)
         {
             callback(cmd);
