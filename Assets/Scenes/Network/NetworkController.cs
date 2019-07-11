@@ -149,7 +149,23 @@ public class NetworkController : MonoBehaviour
             "]"
         );
     }
-
+    public delegate void PokeResponseCallback(string body);
+    public void SendPoking(string pokedEntity, bool mousedown, PokeResponseCallback callback)
+    {
+        client.InteractRequest(myAvatarEntityId, pokedEntity,
+            "[" +
+                "\"poke\", " +
+                (mousedown ? "true" : "false") +
+            "]",
+            delegate(string body)
+            {
+                if (callback != null)
+                {
+                    callback(body);
+                }
+            }
+        );
+    }
 
 
 }

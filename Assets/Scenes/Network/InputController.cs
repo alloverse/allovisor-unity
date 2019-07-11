@@ -13,6 +13,8 @@ public class InputController : MonoBehaviour {
 
     private Vector3 lastMouse;
     float yaw, pitch;
+    string pointedEntityId;
+    string pokedEntityId;
 
     void Update () {
         if (MenuParameters.urlToOpen == null)
@@ -21,7 +23,15 @@ public class InputController : MonoBehaviour {
         AlloIntent intent = IntentFromMouse();
         network.intent = intent;
 
-        PerformPointingInteraction();
+        pointedEntityId = PerformPointingInteraction();
+
+        if (Input.GetMouseButtonDown(1) && pointedEntityId != null)
+        {
+            network.SendPoking(pointedEntityId, true, null);
+        } else if(Input.GetMouseButtonUp(1) && pokedEntityId != null)
+        {
+            network.SendPoking(pointedEntityId, false, null);
+        }
     }
 
     AlloIntent IntentFromMouse()
@@ -48,15 +58,15 @@ public class InputController : MonoBehaviour {
         return intent;
     }
 
-    void PerformPointingInteraction()
+    string PerformPointingInteraction()
     {
         RaycastHit hit;
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
 
         if (!Physics.Raycast(ray, out hit))
-            return;
+            return null;
         if (hit.collider == null)
-            return;
+            return null;
         GameObject go = hit.collider.gameObject;
         while ( go.transform.parent)
         {
@@ -64,9 +74,9 @@ public class InputController : MonoBehaviour {
         }
         string entityId = network.EntityIdFromGO(go);
         if (entityId == null)
-            return;
+            return null;
 
         network.SendPointing(entityId, ray.GetPoint(0.0f), hit.point);
-
+        return entityId;
     }
 }
