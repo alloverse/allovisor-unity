@@ -20,6 +20,9 @@ class AlloClient
     public delegate void Interaction(string type, AlloEntity from, AlloEntity to, LitJson.JsonData command);
     public Interaction interaction = null;
 
+    public delegate void ResponseCallback(string body);
+    private Dictionary<string, ResponseCallback> responseCallbacks;
+
     public AlloClient(string url, AlloIdentity identity, LitJson.JsonData avatarDesc)
     {
         unsafe
@@ -71,6 +74,12 @@ class AlloClient
     public void InteractOneway(string senderEntityId, string receiverEntityId, string body)
     {
         _Interact("oneway", senderEntityId, receiverEntityId, "", body);
+    }
+    public void InteractRequest(string senderEntityId, string receiverEntityId, string body, ResponseCallback callback)
+    {
+        string requestId = System.Guid.NewGuid().ToString();
+        responseCallbacks[requestId] = callback;
+        _Interact("request", senderEntityId, receiverEntityId, requestId, body);
     }
 
     public void Poll()
@@ -140,11 +149,20 @@ class AlloClient
         string from = Marshal.PtrToStringAnsi(_senderEntityId);
         string to = Marshal.PtrToStringAnsi(_receiverEntityId);
         string cmd = Marshal.PtrToStringAnsi(_body);
+        string requestId = Marshal.PtrToStringAnsi(_requestId);
+
         Debug.Log("Incoming " + type + " interaction alloclient: " + from + " > " + to + ": " + cmd + ";");
         LitJson.JsonData data = LitJson.JsonMapper.ToObject(cmd);
         AlloEntity fromEntity = from == null ? null : entities.ContainsKey(from) ? entities[from] : null;
         AlloEntity toEntity = to == null ? null : entities.ContainsKey(to) ? entities[to] : null;
-        if (interaction != null)
+
+        ResponseCallback callback = (type != "response" || string.IsNullOrEmpty(requestId)) ? null : responseCallbacks[requestId];
+        if (callback != null)
+        {
+            callback(cmd);
+            responseCallbacks.Remove(requestId);
+        }
+        else if (interaction != null)
         {
             interaction(type, fromEntity, toEntity, data);
         }
