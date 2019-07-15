@@ -41,7 +41,7 @@ public class NetworkController : MonoBehaviour
             client = new AlloClient(MenuParameters.urlToOpen, identity, avatarDesc);
         } catch(Exception e) {
             MenuParameters.lastError = e.Message;
-            SceneManager.LoadScene("Menu/Menu");
+            SceneManager.LoadScene("Scenes/Menu/Menu");
             return;
         }
         client.added = EntityAdded;
