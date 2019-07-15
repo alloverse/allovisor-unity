@@ -33,7 +33,7 @@ It takes a bit of work to configure a debugger, though. Here's how:
    your Assets/allonet/allonet.cache file in Notepad to find the build number.
 6. Head over to [Azure Pipelines for the build](https://dev.azure.com/alloverse/allonet/_build/results?buildId=73)
    (link to build # 73, change url to match your allonet.cache).
-7. From the assets, download allonet.pdb.
+7. From the assets, download allonet.pdb. Rename it liballonet.pdb. Yay.
 8. In the guide linked above, configure "symbol file locations" to include
    your downloads folder.
 9. Tada. Symbols.
