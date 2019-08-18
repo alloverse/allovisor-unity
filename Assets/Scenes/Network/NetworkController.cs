@@ -81,6 +81,7 @@ public class NetworkController : MonoBehaviour
         Debug.Log("New entity: " + entity.id);
         GameObject obj = Instantiate(baseEntityGO);
         entityGOs[entity.id] = obj;
+        UpdateComponents(obj, entity);
     }
 
     void EntityRemoved(AlloEntity entity)
@@ -120,6 +121,40 @@ public class NetworkController : MonoBehaviour
 
 
 
+    void UpdateComponents(GameObject go, AlloEntity entity)
+    {
+        if (entity.components.ContainsKey("geometry"))
+        {
+            UpdateComponentGeometry(go, entity.components["geometry"]);
+        }
+    }
+
+    // https://github.com/alloverse/docs/blob/master/specifications/components.md#geometry
+    void UpdateComponentGeometry(GameObject go, LitJson.JsonData geometryDesc)
+    {
+        Mesh mesh = go.GetComponent<MeshFilter>().mesh;
+
+        // https://docs.unity3d.com/Manual/GeneratingMeshGeometryProcedurally.html
+        // https://docs.unity3d.com/ScriptReference/Mesh.html
+        if (geometryDesc["type"].ToString() == "inline")
+        {
+            List<Vector3> vertices = new List<Vector3>();
+            List<int> triangles = new List<int>();
+            foreach (LitJson.JsonData vertex in geometryDesc["vertices"])
+            {
+                vertices.Add(AlloEntity.JsonVec(vertex));
+            }
+            foreach (LitJson.JsonData triangle in geometryDesc["triangles"])
+            {
+                foreach (LitJson.JsonData index in triangle)
+                {
+                    triangles.Add((int)index);
+                }
+            }
+            mesh.vertices = vertices.ToArray();
+            mesh.triangles = triangles.ToArray();
+        }
+    }
 
     public GameObject GOFromEntityId(string id)
     {
