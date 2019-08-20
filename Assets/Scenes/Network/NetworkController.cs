@@ -177,6 +177,14 @@ public class NetworkController : MonoBehaviour
             mesh.normals = normals.ToArray();
             mesh.uv = uvs.ToArray();
             mesh.triangles = triangles.ToArray();
+
+            if (geometryDesc.ContainsKey("texture"))
+            {
+                byte[] imageBytes = Convert.FromBase64String(geometryDesc["texture"].ToString());
+                Texture2D tex = new Texture2D(2, 2);
+                tex.LoadImage(imageBytes);
+                go.GetComponent<MeshRenderer>().material.mainTexture = tex;
+            }
         }
     }
 
