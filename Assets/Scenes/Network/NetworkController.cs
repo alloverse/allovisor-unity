@@ -123,6 +123,8 @@ public class NetworkController : MonoBehaviour
 
     void UpdateComponents(GameObject go, AlloEntity entity)
     {
+        // Todo: Call UpdateComponents every time new place state comes in
+        // Todo: Only actually update a component if it has changed since last this function was run
         if (entity.components.ContainsKey("geometry"))
         {
             UpdateComponentGeometry(go, entity.components["geometry"]);
@@ -139,11 +141,30 @@ public class NetworkController : MonoBehaviour
         if (geometryDesc["type"].ToString() == "inline")
         {
             List<Vector3> vertices = new List<Vector3>();
+            List<Vector3> normals = new List<Vector3>();
+            List<Vector2> uvs = new List<Vector2>();
+
             List<int> triangles = new List<int>();
+
             foreach (LitJson.JsonData vertex in geometryDesc["vertices"])
             {
-                vertices.Add(AlloEntity.JsonVec(vertex));
+                vertices.Add(AlloEntity.JsonVec3(vertex));
             }
+            if (geometryDesc.ContainsKey("normals"))
+            {
+                foreach (LitJson.JsonData vertex in geometryDesc["normals"])
+                {
+                    normals.Add(AlloEntity.JsonVec3(vertex));
+                }
+            }
+            if (geometryDesc.ContainsKey("uvs"))
+            {
+                foreach (LitJson.JsonData vertex in geometryDesc["uvs"])
+                {
+                    uvs.Add(AlloEntity.JsonVec2(vertex));
+                }
+            }
+
             foreach (LitJson.JsonData triangle in geometryDesc["triangles"])
             {
                 foreach (LitJson.JsonData index in triangle)
@@ -151,7 +172,10 @@ public class NetworkController : MonoBehaviour
                     triangles.Add((int)index);
                 }
             }
+            mesh.Clear();
             mesh.vertices = vertices.ToArray();
+            mesh.normals = normals.ToArray();
+            mesh.uv = uvs.ToArray();
             mesh.triangles = triangles.ToArray();
         }
     }

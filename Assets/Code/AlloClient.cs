@@ -202,8 +202,8 @@ class AlloEntity
             AlloComponent.Transform transform = new AlloComponent.Transform();
             LitJson.JsonData posRep = transformRep["position"];
             LitJson.JsonData rotRep = transformRep["rotation"];
-            transform.position = JsonVec(posRep);
-            transform.rotation = JsonVec(rotRep);
+            transform.position = JsonVec3(posRep);
+            transform.rotation = JsonVec3(rotRep);
             return transform;
         }
     }
@@ -221,7 +221,12 @@ class AlloEntity
         return 0;
     }
 
-    public static Vector3 JsonVec(LitJson.JsonData vector)
+    public static Vector2 JsonVec2(LitJson.JsonData vector)
+    {
+        return new Vector2(JsonFlt(vector[0]), JsonFlt(vector[1]));
+    }
+
+    public static Vector3 JsonVec3(LitJson.JsonData vector)
     {
         return new Vector3(JsonFlt(vector[0]), JsonFlt(vector[1]), JsonFlt(vector[2]));
     }
