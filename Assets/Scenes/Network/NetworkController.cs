@@ -81,6 +81,7 @@ public class NetworkController : MonoBehaviour
         Debug.Log("New entity: " + entity.id);
         GameObject obj = Instantiate(baseEntityGO);
         entityGOs[entity.id] = obj;
+        UpdateComponents(obj, entity);
     }
 
     void EntityRemoved(AlloEntity entity)
@@ -120,6 +121,72 @@ public class NetworkController : MonoBehaviour
 
 
 
+    void UpdateComponents(GameObject go, AlloEntity entity)
+    {
+        // Todo: Call UpdateComponents every time new place state comes in
+        // Todo: Only actually update a component if it has changed since last this function was run
+        if (entity.components.ContainsKey("geometry"))
+        {
+            UpdateComponentGeometry(go, entity.components["geometry"]);
+        }
+    }
+
+    // https://github.com/alloverse/docs/blob/master/specifications/components.md#geometry
+    void UpdateComponentGeometry(GameObject go, LitJson.JsonData geometryDesc)
+    {
+        Mesh mesh = go.GetComponent<MeshFilter>().mesh;
+
+        // https://docs.unity3d.com/Manual/GeneratingMeshGeometryProcedurally.html
+        // https://docs.unity3d.com/ScriptReference/Mesh.html
+        if (geometryDesc["type"].ToString() == "inline")
+        {
+            List<Vector3> vertices = new List<Vector3>();
+            List<Vector3> normals = new List<Vector3>();
+            List<Vector2> uvs = new List<Vector2>();
+
+            List<int> triangles = new List<int>();
+
+            foreach (LitJson.JsonData vertex in geometryDesc["vertices"])
+            {
+                vertices.Add(AlloEntity.JsonVec3(vertex));
+            }
+            if (geometryDesc.ContainsKey("normals"))
+            {
+                foreach (LitJson.JsonData vertex in geometryDesc["normals"])
+                {
+                    normals.Add(AlloEntity.JsonVec3(vertex));
+                }
+            }
+            if (geometryDesc.ContainsKey("uvs"))
+            {
+                foreach (LitJson.JsonData vertex in geometryDesc["uvs"])
+                {
+                    uvs.Add(AlloEntity.JsonVec2(vertex));
+                }
+            }
+
+            foreach (LitJson.JsonData triangle in geometryDesc["triangles"])
+            {
+                foreach (LitJson.JsonData index in triangle)
+                {
+                    triangles.Add((int)index);
+                }
+            }
+            mesh.Clear();
+            mesh.vertices = vertices.ToArray();
+            mesh.normals = normals.ToArray();
+            mesh.uv = uvs.ToArray();
+            mesh.triangles = triangles.ToArray();
+
+            if (geometryDesc.ContainsKey("texture"))
+            {
+                byte[] imageBytes = Convert.FromBase64String(geometryDesc["texture"].ToString());
+                Texture2D tex = new Texture2D(2, 2);
+                tex.LoadImage(imageBytes);
+                go.GetComponent<MeshRenderer>().material.mainTexture = tex;
+            }
+        }
+    }
 
     public GameObject GOFromEntityId(string id)
     {
