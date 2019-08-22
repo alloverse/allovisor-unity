@@ -42,6 +42,7 @@ public class OVRManager : MonoBehaviour
 	{
 		EyeLevel   = OVRPlugin.TrackingOrigin.EyeLevel,
 		FloorLevel = OVRPlugin.TrackingOrigin.FloorLevel,
+		Stage = OVRPlugin.TrackingOrigin.Stage,
 	}
 
 	public enum EyeTextureFormat
@@ -57,6 +58,7 @@ public class OVRManager : MonoBehaviour
 		LMSLow = OVRPlugin.TiledMultiResLevel.LMSLow,
 		LMSMedium = OVRPlugin.TiledMultiResLevel.LMSMedium,
 		LMSHigh = OVRPlugin.TiledMultiResLevel.LMSHigh,
+		LMSHighTop = OVRPlugin.TiledMultiResLevel.LMSHighTop,
 	}
 
 	public enum XRDevice

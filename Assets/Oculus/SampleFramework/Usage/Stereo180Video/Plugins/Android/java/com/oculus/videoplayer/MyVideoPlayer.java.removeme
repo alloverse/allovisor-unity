@@ -225,4 +225,21 @@ public class MyVideoPlayer
             }
         });
     }
+
+    public static void setPlaybackSpeed(final float speed)
+    {
+        getHandler().post( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                if ( exoPlayer != null )
+                {
+                    PlaybackParameters param = new PlaybackParameters(speed);
+                    exoPlayer.setPlaybackParameters(param);
+                }
+            }
+        });
+    
+    }
 }

@@ -1,3 +1,5 @@
+#define DISABLE_EXTRA_ASSET_CONFIG 
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace Assets.Oculus.VR.Editor
 {
@@ -30,6 +33,7 @@ namespace Assets.Oculus.VR.Editor
 		static public string log;
 
 		private static bool activeProcess = false;
+		private static bool ranSelfUpdate = false;
 
 		private const float buttonPadding = 5.0f;
 
@@ -368,8 +372,23 @@ namespace Assets.Oculus.VR.Editor
 
 		static void ExecuteCommand(TargetPlatform targetPlatform)
 		{
-			string dataPath = Application.dataPath.ToString();
+			string dataPath = Application.dataPath;
+			string toolPath = dataPath + "/Oculus/VR/Editor/Tools/";
+
+			// If we already have a copy of the platform util, check if it needs to be updated
+			if (!ranSelfUpdate && File.Exists(toolPath + "ovr-platform-util.exe"))
+			{
+				ranSelfUpdate = true;
+				activeProcess = true;
+				var updateThread = new Thread(delegate () {
+					CheckForUpdate(toolPath);
+				});
+				updateThread.Start();
+			}
+
 			var thread = new Thread(delegate () {
+				// Wait for update process to finish before starting upload process
+				while (activeProcess) { }
 				Command(targetPlatform, dataPath);
 			});
 			thread.Start();
@@ -406,6 +425,39 @@ namespace Assets.Oculus.VR.Editor
 
 			ovrPlatUtilProcess.StartInfo = processInfo;
 			ovrPlatUtilProcess.EnableRaisingEvents = true;
+		}
+
+		static void CheckForUpdate(string dataPath)
+		{
+			InitializePlatformUtilProcess(dataPath + "ovr-platform-util.exe", "self-update");
+
+			OVRPlatformTool.log += "Checking for update...\n";
+
+			ovrPlatUtilProcess.Exited += new EventHandler(
+				(s, e) =>
+				{
+					if (File.Exists(dataPath + ".ovr-platform-util.exe"))
+					{
+						OVRPlatformTool.log += "Cleaning up...\n";
+						while (File.Exists(dataPath + ".ovr-platform-util.exe")) { }
+						OVRPlatformTool.log += "Finished updating platform utility.\n";
+					}
+					activeProcess = false;
+				}
+			);
+
+			ovrPlatUtilProcess.OutputDataReceived += new DataReceivedEventHandler(
+				(s, e) =>
+				{
+					if (e.Data.Length != 0 && !e.Data.Contains("\u001b"))
+					{
+						OVRPlatformTool.log += e.Data + "\n";
+					}
+				}
+			);
+
+			ovrPlatUtilProcess.Start();
+			ovrPlatUtilProcess.BeginOutputReadLine();
 		}
 
 		static void LoadRedistPackages(string dataPath)
@@ -875,31 +927,23 @@ namespace Assets.Oculus.VR.Editor
 
 		private static IEnumerator ProvisionPlatformUtil(string dataPath)
 		{
-			using (WWW www = new WWW(urlPlatformUtil))
+			var webRequest = new UnityWebRequest(urlPlatformUtil, UnityWebRequest.kHttpVerbGET);
+			string path = dataPath;
+			webRequest.downloadHandler = new DownloadHandlerFile(path);
+			// WWW request timeout in seconds
+			webRequest.timeout = 60;
+			yield return webRequest.SendWebRequest();
+			if (webRequest.isNetworkError || webRequest.isHttpError)
 			{
-				UnityEngine.Debug.Log("Started Provisioning Oculus Platform Util");
-				float timer = 0;
-				float timeOut = 60;
-				yield return www;
-				while (!www.isDone && timer < timeOut)
-				{
-					timer += Time.deltaTime;
-					if (www.error != null)
-					{
-						UnityEngine.Debug.Log("Download error: " + www.error);
-						break;
-					}
-					OVRPlatformTool.log = string.Format("Downloading.. {0:P1}", www.progress);
-					SetDirtyOnGUIChange();
-					yield return new WaitForSeconds(1f);
-				}
-				if (www.isDone)
-				{
-					System.IO.File.WriteAllBytes(dataPath, www.bytes);
-					OVRPlatformTool.log = "Completed Provisioning Oculus Platform Util\n";
-					SetDirtyOnGUIChange();
-				}
+				var networkErrorMsg = "Failed to provision Oculus Platform Util\n";
+				UnityEngine.Debug.LogError(networkErrorMsg);
+				OVRPlatformTool.log = networkErrorMsg;
 			}
+			else
+			{
+				OVRPlatformTool.log = "Completed Provisioning Oculus Platform Util\n";
+			}
+			SetDirtyOnGUIChange();
 		}
 
 		private static void DrawAssetConfigList(Rect rect)
@@ -925,7 +969,8 @@ namespace Assets.Oculus.VR.Editor
 					{
 						Rect attributeRect = new Rect(elementRect.x + INDENT_SPACING, elementRect.y + SINGLE_LINE_SPACING,
 							elementRect.width - INDENT_SPACING - 3f, SINGLE_LINE_SPACING);
-
+						// Extra asset config params are disabled for now until CLI supports them
+#if !DISABLE_EXTRA_ASSET_CONFIG
 						fieldLabel = new GUIContent("Required Asset [?]", "Whether or not this asset file is required for the app to run.");
 						config.required = EditorGUI.Toggle(attributeRect, fieldLabel, config.required);
 
@@ -934,6 +979,7 @@ namespace Assets.Oculus.VR.Editor
 						config.type = (AssetConfig.AssetType)EditorGUI.EnumPopup(attributeRect, fieldLabel, config.type);
 
 						attributeRect.y += SINGLE_LINE_SPACING;
+#endif
 						fieldLabel = new GUIContent("Asset SKU [?]", "The Oculus store SKU for this asset file.");
 						config.sku = EditorGUI.TextField(attributeRect, fieldLabel, config.sku);
 
@@ -956,7 +1002,11 @@ namespace Assets.Oculus.VR.Editor
 				for (int i = 0; i < OVRPlatformToolSettings.AssetConfigs.Count; i++)
 				{
 					AssetConfig config = OVRPlatformToolSettings.AssetConfigs[i];
+#if !DISABLE_EXTRA_ASSET_CONFIG
 					totalHeight += config.GetFoldoutState() ? SINGLE_LINE_SPACING * 4 : SINGLE_LINE_SPACING;
+#else
+					totalHeight += config.GetFoldoutState() ? SINGLE_LINE_SPACING * 2 : SINGLE_LINE_SPACING;
+#endif
 				}
 			}
 			else
@@ -1035,7 +1085,7 @@ namespace Assets.Oculus.VR.Editor
 			}
 
 			readonly IEnumerator routine;
-		  bool completed;
+			bool completed;
 			EditorCoroutine(IEnumerator _routine)
 			{
 				routine = _routine;
@@ -1065,6 +1115,5 @@ namespace Assets.Oculus.VR.Editor
 				}
 			}
 		}
-
 	}
 }

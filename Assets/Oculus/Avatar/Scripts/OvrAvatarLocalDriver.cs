@@ -97,7 +97,6 @@ public class OvrAvatarLocalDriver : OvrAvatarDriver {
                 controllerRightPose = GetControllerPose(OVRInput.Controller.RTouch),
             };
         }
-
     }
 
     public override void UpdateTransforms(IntPtr sdkAvatar)

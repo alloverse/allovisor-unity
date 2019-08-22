@@ -45,24 +45,42 @@ public class MoviePlayerSample : MonoBehaviour
         if (overlay == null)
             overlay = gameObject.AddComponent<OVROverlay>();
 
-        // only mobile has Equirect shape
-        overlay.enabled = Application.platform == RuntimePlatform.Android;
+        // set shape to Equirect
+        overlay.currentOverlayShape = OVROverlay.OverlayShape.Equirect;
+
+        // set source and dest matrices for 180 video
+        overlay.overrideTextureRectMatrix = true;
+        overlay.SetSrcDestRects(new Rect(0, 0, 0.5f, 1.0f), new Rect(0.5f, 0, 0.5f, 1.0f), new Rect(0.25f, 0, 0.5f, 1.0f), new Rect(0.25f, 0, 0.5f, 1.0f));
+
+        // disable it to reset it.
+        overlay.enabled = false;
         // only can use external surface with native plugin
         overlay.isExternalSurface = NativeVideoPlayer.IsAvailable;
+        // only mobile has Equirect shape
+        overlay.enabled = Application.platform == RuntimePlatform.Android;
+
+#if UNITY_EDITOR
+        overlay.currentOverlayShape = OVROverlay.OverlayShape.Quad;
+        overlay.enabled = true;
+#endif
     }
 
-    private void Start()
+    private System.Collections.IEnumerator Start()
     {
-
         if (mediaRenderer.material == null)
 		{
 			Debug.LogError("No material for movie surface");
-            return;
+            yield break;
 		}
+
+        // wait 1 second to start (there is a bug in Unity where starting
+        // the video too soon will cause it to fail to load)
+        yield return new WaitForSeconds(1.0f);
 
         if (!string.IsNullOrEmpty(MovieName))
         {
 #if UNITY_EDITOR
+            // in editor, just pull in the movie file from wherever it lives (to test without putting in streaming assets)
             var guids = UnityEditor.AssetDatabase.FindAssets(Path.GetFileNameWithoutExtension(MovieName));
 
             if (guids.Length > 0)
@@ -102,7 +120,8 @@ public class MoviePlayerSample : MonoBehaviour
             {
                 Debug.Log("Playing Unity VideoPlayer");
                 videoPlayer.url = moviePath;
-                videoPlayer.Play();
+                videoPlayer.Prepare();
+                videoPlayer.Play();                
             }
 
             Debug.Log("MovieSample Start");
@@ -142,38 +161,38 @@ public class MoviePlayerSample : MonoBehaviour
 
 	void Update()
 	{
-        if (!isPlaying)
-            return;
-
         if (!overlay.isExternalSurface)            
         {
-            if (videoPlayer.texture != null)
+            var displayTexture = videoPlayer.texture != null ? videoPlayer.texture : Texture2D.blackTexture;
+            if (overlay.enabled)
             {
-                if (overlay.enabled)
+                if (overlay.textures[0] != displayTexture)
                 {
-                    overlay.textures[0] = videoPlayer.texture;
-                    overlay.textures[1] = null;
-                }
-                else
-                {
-                    mediaRenderer.material.mainTexture = videoPlayer.texture;
-                    mediaRenderer.material.SetVector("_SrcRectLeft", overlay.srcRectLeft.ToVector());
-                    mediaRenderer.material.SetVector("_SrcRectRight", overlay.srcRectRight.ToVector());
+                    // OVROverlay won't check if the texture changed, so disable to clear old texture
+                    overlay.enabled = false;
+                    overlay.textures[0] = displayTexture;
+                    overlay.enabled = true;
                 }
             }
             else
             {
-                overlay.textures[0] = null;
-                overlay.textures[1] = null;
-                mediaRenderer.material.mainTexture = Texture2D.blackTexture;   
+                mediaRenderer.material.mainTexture = displayTexture;
+                mediaRenderer.material.SetVector("_SrcRectLeft", overlay.srcRectLeft.ToVector());
+                mediaRenderer.material.SetVector("_SrcRectRight", overlay.srcRectRight.ToVector());
             }
         }
 	}
 
     public void Rewind()
     {
-        if (videoPlayer != null)
-			videoPlayer.Stop();
+        if (overlay.isExternalSurface)
+        {
+            NativeVideoPlayer.SetPlaybackSpeed(-1);
+        }
+        else
+        {
+            videoPlayer.playbackSpeed = -1;
+        }
     }
     
     public void Stop()
