@@ -111,6 +111,7 @@ public class MenuScript : MonoBehaviour {
 		
 	}
 
+    [AOT.MonoPInvokeCallback(typeof(MenuScript.UrlCallback))]
     private static void UrlHandler(string url) {
         MenuScript.g_latestMenu.ConnectToUrl(url);
     }

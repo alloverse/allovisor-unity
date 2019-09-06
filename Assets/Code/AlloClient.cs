@@ -161,6 +161,7 @@ class AlloClient
         }
     }
 
+    [AOT.MonoPInvokeCallback(typeof(_AlloClient.InteractionCallbackFun))]
     static unsafe private void _interaction(_AlloClient* _client, IntPtr _type, IntPtr _senderEntityId, IntPtr _receiverEntityId, IntPtr _requestId, IntPtr _body)
     {
         string type = Marshal.PtrToStringAnsi(_type);
