@@ -82,9 +82,11 @@ public class MenuScript : MonoBehaviour {
     public GameObject panel;
     public GameObject buttonPrefab;
     public GameObject errorPrefab;
+    static MenuScript g_latestMenu;
 
-	void Start () {
-        SetUrlCallback(Marshal.GetFunctionPointerForDelegate(new UrlCallback(this.UrlHandler)));
+    void Start () {
+        MenuScript.g_latestMenu = this;
+        SetUrlCallback(Marshal.GetFunctionPointerForDelegate(new UrlCallback(MenuScript.UrlHandler)));
         VisorSettings.LoadGlobal();
 
         if (MenuParameters.lastError != null) {
@@ -109,8 +111,8 @@ public class MenuScript : MonoBehaviour {
 		
 	}
 
-    private void UrlHandler(string url) {
-        ConnectToUrl(url);
+    private static void UrlHandler(string url) {
+        MenuScript.g_latestMenu.ConnectToUrl(url);
     }
     public void ConnectTo() {
         string url = EventSystem.current.currentSelectedGameObject.name;
