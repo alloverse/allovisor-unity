@@ -25,6 +25,7 @@ class AlloClient
 
     private _AlloClient.InteractionCallbackFun interactionCallback;
     private GCHandle interactionCallbackHandle;
+    private GCHandle thisHandle;
 
     public AlloClient(string url, AlloIdentity identity, LitJson.JsonData avatarDesc)
     {
@@ -43,10 +44,13 @@ class AlloClient
                 throw new Exception("Failed to connect to " + url);
             }
 
-            interactionCallback = new _AlloClient.InteractionCallbackFun(this._interaction);
+            interactionCallback = new _AlloClient.InteractionCallbackFun(AlloClient._interaction);
             interactionCallbackHandle = GCHandle.Alloc(interactionCallback);
             IntPtr icp = Marshal.GetFunctionPointerForDelegate(interactionCallback);
             client->interaction_callback = icp;
+
+            thisHandle = GCHandle.Alloc(this);
+            client->_backref = (IntPtr)thisHandle;
         }
     }
     ~AlloClient()
@@ -152,10 +156,12 @@ class AlloClient
         {
             _AlloClient.DisconnectFun disconnect = (_AlloClient.DisconnectFun)Marshal.GetDelegateForFunctionPointer(client->disconnect, typeof(_AlloClient.DisconnectFun));
             disconnect(client, reason);
+
+            thisHandle.Free();
         }
     }
 
-    unsafe private void _interaction(_AlloClient* _client, IntPtr _type, IntPtr _senderEntityId, IntPtr _receiverEntityId, IntPtr _requestId, IntPtr _body)
+    static unsafe private void _interaction(_AlloClient* _client, IntPtr _type, IntPtr _senderEntityId, IntPtr _receiverEntityId, IntPtr _requestId, IntPtr _body)
     {
         string type = Marshal.PtrToStringAnsi(_type);
         string from = Marshal.PtrToStringAnsi(_senderEntityId);
@@ -163,28 +169,31 @@ class AlloClient
         string cmd = Marshal.PtrToStringAnsi(_body);
         string requestId = Marshal.PtrToStringAnsi(_requestId);
 
+        GCHandle backref = (GCHandle)_client->_backref;
+        AlloClient self = backref.Target as AlloClient;
+
         Debug.Log("Incoming " + type + " interaction alloclient: " + from + " > " + to + ": " + cmd + ";");
         LitJson.JsonData data = LitJson.JsonMapper.ToObject(cmd);
         AlloEntity fromEntity = null;
         if (!string.IsNullOrEmpty(from))
-            entities.TryGetValue(from, out fromEntity);
+            self.entities.TryGetValue(from, out fromEntity);
         AlloEntity toEntity = null;
         if (!string.IsNullOrEmpty(to))
-            entities.TryGetValue(to, out toEntity);
+            self.entities.TryGetValue(to, out toEntity);
 
         ResponseCallback callback = null; 
         if (type == "response" && !string.IsNullOrEmpty(requestId))
         {
-            responseCallbacks.TryGetValue(requestId, out callback);
+            self.responseCallbacks.TryGetValue(requestId, out callback);
         }
         if (callback != null)
         {
             callback(cmd);
-            responseCallbacks.Remove(requestId);
+            self.responseCallbacks.Remove(requestId);
         }
-        else if (interaction != null)
+        else if (self.interaction != null)
         {
-            interaction(type, fromEntity, toEntity, data);
+            self.interaction(type, fromEntity, toEntity, data);
         }
     }
 }
@@ -303,6 +312,7 @@ struct _AlloClient
     // internal
     public _AlloState state;
     public IntPtr _internal;
+    public IntPtr _backref;
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public unsafe delegate void SetIntentFun(_AlloClient* client, AlloIntent intent);
