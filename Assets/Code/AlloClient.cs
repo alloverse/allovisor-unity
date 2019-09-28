@@ -23,10 +23,6 @@ class AlloClient
     public delegate void ResponseCallback(string body);
     private Dictionary<string, ResponseCallback> responseCallbacks = new Dictionary<string, ResponseCallback>();
 
-    private _AlloClient.InteractionCallbackFun interactionCallback;
-    private GCHandle interactionCallbackHandle;
-    private GCHandle thisHandle;
-
     public AlloClient(string url, AlloIdentity identity, LitJson.JsonData avatarDesc)
     {
         unsafe
@@ -43,28 +39,18 @@ class AlloClient
             {
                 throw new Exception("Failed to connect to " + url);
             }
-
-            interactionCallback = new _AlloClient.InteractionCallbackFun(AlloClient._interaction);
-            interactionCallbackHandle = GCHandle.Alloc(interactionCallback);
-            IntPtr icp = Marshal.GetFunctionPointerForDelegate(interactionCallback);
-            client->interaction_callback = icp;
-
-            thisHandle = GCHandle.Alloc(this);
-            client->_backref = (IntPtr)thisHandle;
         }
     }
     ~AlloClient()
     {
-        interactionCallbackHandle.Free();
+        
     }
 
     public void SetIntent(AlloIntent intent)
     {
         unsafe
         {
-            _AlloClient.SetIntentFun setIntent = (_AlloClient.SetIntentFun)Marshal.GetDelegateForFunctionPointer(client->set_intent, typeof(_AlloClient.SetIntentFun));
-            setIntent(client, intent);
-
+            _AlloClient.alloclient_set_intent(client, intent);
         }
     }
 
@@ -72,14 +58,12 @@ class AlloClient
     {
         unsafe
         {
-            _AlloClient.InteractFun interact = (_AlloClient.InteractFun)Marshal.GetDelegateForFunctionPointer(client->interact, typeof(_AlloClient.InteractFun));
-
             IntPtr interactionTypePtr = Marshal.StringToHGlobalAnsi(interactionType);
             IntPtr senderEntityIdPtr = Marshal.StringToHGlobalAnsi(senderEntityId);
             IntPtr receiverEntityIdPtr = Marshal.StringToHGlobalAnsi(receiverEntityId);
             IntPtr requestIdPtr = Marshal.StringToHGlobalAnsi(requestId);
             IntPtr bodyPtr = Marshal.StringToHGlobalAnsi(body);
-            interact(client, interactionTypePtr, senderEntityIdPtr, receiverEntityIdPtr, requestIdPtr, bodyPtr);
+            _AlloClient.alloclient_send_interaction(client, interactionTypePtr, senderEntityIdPtr, receiverEntityIdPtr, requestIdPtr, bodyPtr);
             Marshal.FreeHGlobal(interactionTypePtr);
             Marshal.FreeHGlobal(senderEntityIdPtr);
             Marshal.FreeHGlobal(receiverEntityIdPtr);
@@ -105,8 +89,7 @@ class AlloClient
         unsafe
         {
             // 1. Run network to send and get world changes
-            _AlloClient.PollFun poll = (_AlloClient.PollFun)Marshal.GetDelegateForFunctionPointer(client->poll, typeof(_AlloClient.PollFun));
-            poll(client);
+            _AlloClient.alloclient_poll(client);
 
             // 2. Parse through all the C entities and create C# equivalents
             HashSet<string> incomingEntityIds = new HashSet<string>();
@@ -149,15 +132,23 @@ class AlloClient
             }
             entities.Remove(removedId);
         }
+
+        unsafe
+        {
+            // 3. poll for new interactions
+            _AlloInteraction* interaction = null;
+            while((interaction = _AlloClient.alloclient_pop_interaction(client)) != null)
+            {
+                _interaction(client, interaction->type, interaction->senderEntityId, interaction->receiverEntityId, interaction->requestId, interaction->body);
+                _AlloClient.allo_interaction_free(interaction);
+            }
+        }
     }
     public void Disconnect(int reason)
     {
         unsafe
         {
-            _AlloClient.DisconnectFun disconnect = (_AlloClient.DisconnectFun)Marshal.GetDelegateForFunctionPointer(client->disconnect, typeof(_AlloClient.DisconnectFun));
-            disconnect(client, reason);
-
-            thisHandle.Free();
+            _AlloClient.alloclient_disconnect(client);
         }
     }
 
@@ -276,6 +267,16 @@ public struct AlloIntent
 };
 
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+public struct _AlloInteraction
+{
+    public IntPtr type;
+    public IntPtr senderEntityId;
+    public IntPtr receiverEntityId;
+    public IntPtr requestId;
+    public IntPtr body;
+};
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
 struct AlloVector
 {
     public double x, y, z;
@@ -299,6 +300,24 @@ struct _AlloClient
     public unsafe static extern _AlloClient* allo_connect(IntPtr urlString, IntPtr identity, IntPtr avatarDesc);
 
     [DllImport("liballonet")]
+    public unsafe static extern void alloclient_disconnect(_AlloClient* client);
+
+    [DllImport("liballonet")]
+    public unsafe static extern void alloclient_poll(_AlloClient* client);
+
+    [DllImport("liballonet")]
+    public unsafe static extern void alloclient_send_interaction(_AlloClient* client, IntPtr type, IntPtr sender, IntPtr receiver, IntPtr rid, IntPtr body);
+
+    [DllImport("liballonet")]
+    public unsafe static extern void alloclient_set_intent(_AlloClient* client, AlloIntent intent);
+
+    [DllImport("liballonet")]
+    public unsafe static extern _AlloInteraction *alloclient_pop_interaction(_AlloClient* client);
+
+    [DllImport("liballonet")]
+    public unsafe static extern void allo_interaction_free(_AlloInteraction *interaction);
+
+    [DllImport("liballonet")]
     public unsafe static extern string cJSON_Print(IntPtr cjson);
 
     public IntPtr set_intent;
@@ -314,18 +333,6 @@ struct _AlloClient
     public _AlloState state;
     public IntPtr _internal;
     public IntPtr _backref;
-
-    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public unsafe delegate void SetIntentFun(_AlloClient* client, AlloIntent intent);
-
-    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public unsafe delegate void InteractFun(_AlloClient* client, IntPtr interactionType, IntPtr senderEntityId, IntPtr receiverEntityId, IntPtr requestId, IntPtr body);
-
-    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public unsafe delegate void DisconnectFun(_AlloClient* client, int reason);
-
-    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public unsafe delegate void PollFun(_AlloClient* client);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public unsafe delegate void StateCallbackFun(_AlloClient* client, ref _AlloState state);
