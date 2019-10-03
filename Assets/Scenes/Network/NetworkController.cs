@@ -47,6 +47,7 @@ public class NetworkController : MonoBehaviour
         client.added = EntityAdded;
         client.removed = EntityRemoved;
         client.interaction = Interaction;
+        client.disconnected = OnDisconnected;
     }
 
     void Update()
@@ -110,6 +111,13 @@ public class NetworkController : MonoBehaviour
             mainCamera.transform.position = avatarEntity.transform.position + offset;
             mainCamera.transform.rotation = avatarEntity.transform.rotation;
         }
+    }
+
+    private void OnDisconnected()
+    {
+        MenuParameters.lastError = "You were disconnected";
+        SceneManager.LoadScene("Scenes/Menu/Menu");
+        return;
     }
 
     void OnApplicationQuit()

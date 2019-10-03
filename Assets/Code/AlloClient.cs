@@ -19,9 +19,18 @@ class AlloClient
     public EntityRemoved removed = null;
     public delegate void Interaction(string type, AlloEntity from, AlloEntity to, LitJson.JsonData command);
     public Interaction interaction = null;
+    public delegate void Disconnected();
+    public Disconnected disconnected = null;
 
     public delegate void ResponseCallback(string body);
     private Dictionary<string, ResponseCallback> responseCallbacks = new Dictionary<string, ResponseCallback>();
+
+    private _AlloClient.InteractionCallbackFun interactionCallback;
+    private GCHandle interactionCallbackHandle;
+    private _AlloClient.DisconnectedCallbackFun disconnectedCallback;
+    private GCHandle disconnectedCallbackHandle;
+    private GCHandle thisHandle;
+
 
     public AlloClient(string url, AlloIdentity identity, LitJson.JsonData avatarDesc)
     {
@@ -39,11 +48,26 @@ class AlloClient
             {
                 throw new Exception("Failed to connect to " + url);
             }
+
+            interactionCallback = new _AlloClient.InteractionCallbackFun(AlloClient._interaction);
+            interactionCallbackHandle = GCHandle.Alloc(interactionCallback);
+            IntPtr icp = Marshal.GetFunctionPointerForDelegate(interactionCallback);
+            client->interaction_callback = icp;
+
+            disconnectedCallback = new _AlloClient.DisconnectedCallbackFun(AlloClient._disconnected);
+            disconnectedCallbackHandle = GCHandle.Alloc(disconnectedCallback);
+            IntPtr icp2 = Marshal.GetFunctionPointerForDelegate(disconnectedCallback);
+            client->disconnected_callback = icp2;
+
+            thisHandle = GCHandle.Alloc(this);
+            client->_backref = (IntPtr)thisHandle;
+
         }
     }
     ~AlloClient()
     {
-        
+        interactionCallbackHandle.Free();
+        disconnectedCallbackHandle.Free();
     }
 
     public void SetIntent(AlloIntent intent)
@@ -136,11 +160,11 @@ class AlloClient
         unsafe
         {
             // 3. poll for new interactions
-            _AlloInteraction* interaction = null;
-            while((interaction = _AlloClient.alloclient_pop_interaction(client)) != null)
+            _AlloInteraction* newinter = null;
+            while((newinter = _AlloClient.alloclient_pop_interaction(client)) != null)
             {
-                _interaction(client, interaction->type, interaction->senderEntityId, interaction->receiverEntityId, interaction->requestId, interaction->body);
-                _AlloClient.allo_interaction_free(interaction);
+                _interaction(client, newinter->type, newinter->senderEntityId, newinter->receiverEntityId, newinter->requestId, newinter->body);
+                _AlloClient.allo_interaction_free(newinter);
             }
         }
     }
@@ -149,7 +173,18 @@ class AlloClient
         unsafe
         {
             _AlloClient.alloclient_disconnect(client);
+            client = null;
+            thisHandle.Free();
         }
+    }
+
+    [AOT.MonoPInvokeCallback(typeof(_AlloClient.InteractionCallbackFun))]
+    static unsafe private void _disconnected(_AlloClient* _client)
+    {
+        GCHandle backref = (GCHandle)_client->_backref;
+        AlloClient self = backref.Target as AlloClient;
+        self.disconnected?.Invoke();
+        self.Disconnect(-1);
     }
 
     [AOT.MonoPInvokeCallback(typeof(_AlloClient.InteractionCallbackFun))]
@@ -178,14 +213,15 @@ class AlloClient
         {
             self.responseCallbacks.TryGetValue(requestId, out callback);
         }
+
         if (callback != null)
         {
             callback(cmd);
             self.responseCallbacks.Remove(requestId);
         }
-        else if (self.interaction != null)
+        else
         {
-            self.interaction(type, fromEntity, toEntity, data);
+            self.interaction?.Invoke(type, fromEntity, toEntity, data);
         }
     }
 }
@@ -320,14 +356,10 @@ struct _AlloClient
     [DllImport("liballonet")]
     public unsafe static extern string cJSON_Print(IntPtr cjson);
 
-    public IntPtr set_intent;
-    public IntPtr interact;
-    public IntPtr disconnect;
-
-    public IntPtr poll;
 
     public IntPtr state_callback;
     public IntPtr interaction_callback;
+    public IntPtr disconnected_callback;
 
     // internal
     public _AlloState state;
@@ -338,6 +370,6 @@ struct _AlloClient
     public unsafe delegate void StateCallbackFun(_AlloClient* client, ref _AlloState state);
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public unsafe delegate void InteractionCallbackFun(_AlloClient* client, IntPtr type, IntPtr senderEntityId, IntPtr receiverEntityId, IntPtr requestId, IntPtr body);
-
-
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    public unsafe delegate void DisconnectedCallbackFun(_AlloClient* client);
 };
