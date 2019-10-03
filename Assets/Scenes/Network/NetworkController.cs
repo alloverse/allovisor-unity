@@ -115,6 +115,7 @@ public class NetworkController : MonoBehaviour
 
     private void OnDisconnected()
     {
+        client = null;
         MenuParameters.lastError = "You were disconnected";
         SceneManager.LoadScene("Scenes/Menu/Menu");
         return;

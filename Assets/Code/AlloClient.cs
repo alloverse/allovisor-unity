@@ -66,8 +66,11 @@ class AlloClient
     }
     ~AlloClient()
     {
-        interactionCallbackHandle.Free();
-        disconnectedCallbackHandle.Free();
+        if (interactionCallbackHandle.IsAllocated)
+        {
+            interactionCallbackHandle.Free();
+            disconnectedCallbackHandle.Free();
+        }
     }
 
     public void SetIntent(AlloIntent intent)
@@ -172,9 +175,13 @@ class AlloClient
     {
         unsafe
         {
-            _AlloClient.alloclient_disconnect(client);
-            client = null;
-            thisHandle.Free();
+            if (client != null)
+            {
+                _AlloClient.alloclient_disconnect(client);
+                client = null;
+
+                thisHandle.Free();
+            }
         }
     }
 
@@ -183,7 +190,9 @@ class AlloClient
     {
         GCHandle backref = (GCHandle)_client->_backref;
         AlloClient self = backref.Target as AlloClient;
+        Debug.Log("_disconnected: calling delegate " + self.disconnected.ToString());
         self.disconnected?.Invoke();
+        Debug.Log("_disconnected: deallocating");
         self.Disconnect(-1);
     }
 
