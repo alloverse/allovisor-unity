@@ -1,7 +1,11 @@
 # allovisor
 
-Allovisor is the "user interface" into the Alloverse. Use this Unity app to connect to an Alloverse Place'
-and interact with the apps available in that place.
+Allovisor is the "user interface" into the Alloverse. This Unity visor was the first attempt at writing the headset
+app used to access the Alloverse, to connect to a place and interact with the apps available in this place.
+
+The subsequent and current iteration of the visor is [allovisor-lovr](https://github.com/alloverse/allovisor-lovr/).
+
+This project is thus discontinued, and you shouldn't use it. It's still available for reference and archaeology.
 
 ## Compiling and developing Allovisor
 
